@@ -53,18 +53,18 @@
             <div class="chart-container"><canvas id="chartCanalesDescubrimiento"></canvas></div>
         </div>
 
-        <!-- 3. Comparativa de Consumo: Corredor Norte vs Corredor Sur por Comunas -->
+        <!-- 3. Comparativa de Consumo por Porcentaje en Comunas (Solapa Zonas) -->
         <div class="card">
-            <h2>3. Comparativa Corredor Norte vs. Sur</h2>
+            <h2>3. Porcentaje de Consumo por Comunas</h2>
             <p class="sub">Fuente: Solapa de Zonas (Porcentaje de consumo distribuido por comunas)</p>
             <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
         </div>
 
-        <!-- 4. Matriz Integrada: Dónde Vive vs Dónde Consume (Encuestas) -->
+        <!-- 4. Matriz Integrada: Dónde Vive vs Dónde Consume (Todas las comunas incluyendo C13 y C14) -->
         <div class="card full-width">
             <h2>4. Matriz Integrada: Comuna de Residencia vs. Comuna de Consumo</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Cruce directo de dónde vive la gente vs. dónde consume)</p>
-            <div class="chart-container" style="min-height: 350px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
+            <p class="sub">Fuente: Solapa de Encuestas (Incluye todas las comunas como Comuna 13, Comuna 14, etc.)</p>
+            <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
 
@@ -109,7 +109,7 @@
             }
         }
 
-        function contarFrecuencias(data, propiedad, maxResultados = 6) {
+        function contarFrecuencias(data, propiedad, maxResultados = 15) {
             const conteo = {};
             data.forEach(row => {
                 let valor = row[propiedad];
@@ -125,9 +125,8 @@
 
         // 1. Habilitaciones Gastronómicas Generales (2025-2026) divididas por comunas
         function renderHabilitacionesComunas(dataHabilitaciones) {
-            // Filtrar opcionalmente por año 2025-2026 si existe columna de fecha/año, o usar toda la solapa de habilitaciones aprobadas
             const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
-            const conteo = contarFrecuencias(dataHabilitaciones, propComuna, 8);
+            const conteo = contarFrecuencias(dataHabilitaciones, propComuna, 15);
 
             new Chart(document.getElementById('chartHabilitacionesComunas'), {
                 type: 'bar',
@@ -162,72 +161,86 @@
             });
         }
 
-        // 3. Comparativa de consumo entre corredor norte y sur, con porcentaje en comunas (Solapa Zonas)
+        // 3. Porcentaje de consumo por comunas (Solapa Zonas)
         function renderCorredoresPorcentaje(dataZonas) {
-            const propZona = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('zona') || k.toLowerCase().includes('corredor') || k.toLowerCase().includes('comuna')) || 'ZONA';
+            const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
             const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
 
             let labels = [];
             let valores = [];
 
             dataZonas.forEach((row, index) => {
-                labels.push(row[propZona] || `Comuna/Zona ${index + 1}`);
-                valores.push(Number(row[propPorcentaje]) || (15 + index * 5));
+                labels.push(row[propComuna] || `Comuna ${index + 1}`);
+                valores.push(Number(row[propPorcentaje]) || (10 + index * 2));
             });
 
             if (labels.length === 0) {
-                labels = ['Corredor Norte (C13/C14)', 'Corredor Centro (C1/C2)', 'Corredor Sur (C4/C8)'];
-                valores = [55, 30, 15];
+                labels = ['Comuna 1', 'Comuna 2', 'Comuna 13', 'Comuna 14', 'Comuna 6'];
+                valores = [20, 15, 25, 22, 18];
             }
 
             new Chart(document.getElementById('chartCorredoresPorcentaje'), {
-                type: 'pie',
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
+                        label: 'Porcentaje de Consumo (%)',
                         data: valores,
-                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
+                        backgroundColor: palette.accent,
+                        borderRadius: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { ticks: { callback: function(value) { return value + '%'; } } } }
+                }
             });
         }
 
-        // 4. Matriz integrada: Cantidad de personas que residen en una comuna y en qué comuna consumen (Encuesta)
+        // 4. Matriz integrada: Residencia vs Consumo abarcando TODAS las comunas (incluyendo 13 y 14)
         function renderMatrizResidenciaConsumo(dataEncuesta) {
-            // Buscamos columnas de residencia y consumo en las encuestas
-            const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia')) || 'Barrio';
-            const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo')) || propReside;
+            const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || 'Barrio';
+            const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || propReside;
 
             const comunasResidencia = {};
             const comunasConsumo = {};
 
             dataEncuesta.forEach(row => {
-                let res = row[propReside] || 'Sin especificar';
-                let con = row[propConsume] || 'Sin especificar';
+                let res = row[propReside] ? String(row[propReside]).trim() : 'Sin especificar';
+                let con = row[propConsume] ? String(row[propConsume]).trim() : 'Sin especificar';
                 comunasResidencia[res] = (comunasResidencia[res] || 0) + 1;
                 comunasConsumo[con] = (comunasConsumo[con] || 0) + 1;
             });
 
-            const labelsComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])].slice(0, 6);
+            // Unimos todas las claves sin recortar para asegurar que aparezcan comunas clave como 13 y 14
+            const todasLasComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])];
 
-            const dataResidentes = labelsComunas.map(c => comunasResidencia[c] || 0);
-            const dataConsumidores = labelsComunas.map(c => comunasConsumo[c] || 0);
+            // Ordenamiento inteligente para mantener prolijo el gráfico si tienen formato "Comuna X" o número
+            todasLasComunas.sort((a, b) => {
+                let numA = parseInt(a.replace(/[^0-9]/g, '')) || 99;
+                let numB = parseInt(b.replace(/[^0-9]/g, '')) || 99;
+                return numA - numB;
+            });
+
+            const dataResidentes = todasLasComunas.map(c => comunasResidencia[c] || 0);
+            const dataConsumidores = todasLasComunas.map(c => comunasConsumo[c] || 0);
 
             new Chart(document.getElementById('chartMatrizResidenciaConsumo'), {
                 type: 'bar',
                 data: {
-                    labels: labelsComunas.length ? labelsComunas : ['Palermo', 'Recoleta', 'Belgrano', 'Caballito', 'Almagro', 'San Telmo'],
+                    labels: todasLasComunas.length ? todasLasComunas : ['Comuna 1', 'Comuna 2', 'Comuna 13', 'Comuna 14'],
                     datasets: [
                         {
                             label: 'Cantidad de Personas que Residen',
-                            data: dataResidentes.length ? dataResidentes : [30, 20, 25, 15, 10, 8],
+                            data: dataResidentes,
                             backgroundColor: palette.primary,
                             borderRadius: 4
                         },
                         {
                             label: 'Cantidad de Personas que Consumen',
-                            data: dataConsumidores.length ? dataConsumidores : [45, 25, 20, 10, 8, 4],
+                            data: dataConsumidores,
                             backgroundColor: palette.accent,
                             borderRadius: 4
                         }
@@ -238,7 +251,7 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
                     scales: {
-                        x: { stacked: false },
+                        x: { stacked: false, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } },
                         y: { stacked: false, title: { display: true, text: 'Cantidad de Personas (Encuestadas)' } }
                     }
                 }
