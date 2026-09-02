@@ -33,16 +33,16 @@
 
     <header>
         <h1>Análisis Estratégico Integrado: Cafeterías de Especialidad CABA</h1>
-        <p class="bajada">Cruce relacional específico entre Habilitaciones 2024-2026, Encuestas de Consumo y Solapa de Zonas.</p>
+        <p class="bajada">Cruce relacional específico entre Habilitaciones 2025-2026, Encuestas de Consumo y Solapa de Zonas.</p>
     </header>
 
     <div class="status-bar" id="status-msg">⏳ Sincronizando datos específicos desde Google Sheets...</div>
 
     <main class="dashboard-grid">
-        <!-- 1. Habilitaciones Gastronómicas Generales 2025-2026 por Comunas -->
+        <!-- 1. Habilitaciones Totales vs Por Comuna (2025-2026) -->
         <div class="card">
-            <h2>1. Habilitaciones Gastronómicas (2025-2026)</h2>
-            <p class="sub">Fuente: Solapa de Habilitaciones Aprobadas (Distribución por Comunas)</p>
+            <h2>1. Habilitaciones Totales y por Comuna (2025-2026)</h2>
+            <p class="sub">Fuente: Solapa de Habilitaciones (Conteo exacto por comuna en el periodo)</p>
             <div class="chart-container"><canvas id="chartHabilitacionesComunas"></canvas></div>
         </div>
 
@@ -55,15 +55,15 @@
 
         <!-- 3. Porcentaje de Consumo por Comunas (Solapa Zonas) -->
         <div class="card">
-            <h2>3. Porcentaje de Consumo por Comunas</h2>
-            <p class="sub">Fuente: Solapa de Zonas (Porcentaje de participación por comuna)</p>
+            <h2>3. Porcentaje de Consumo por Comuna (%)</h2>
+            <p class="sub">Fuente: Solapa de Zonas (Participación porcentual del consumo total de la ciudad por comuna)</p>
             <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
         </div>
 
-        <!-- 4. Matriz Integrada: Dónde Vive vs Dónde Consume -->
+        <!-- 4. Matriz Comparativa: Personas que Residen vs Personas que Consumen por Comuna -->
         <div class="card full-width">
-            <h2>4. Matriz Integrada: Comuna de Residencia vs. Comuna de Consumo</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Incluye todas las comunas de CABA, reflejando fielmente las respuestas)</p>
+            <h2>4. Comparativa por Comuna: Personas que Residen vs. Personas que Consumen</h2>
+            <p class="sub">Fuente: Solapa de Encuestas (Comparación independiente de volumen demográfico vs. comercial por comuna)</p>
             <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
@@ -123,7 +123,6 @@
             return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, maxResultados);
         }
 
-        // Normalizador estricto para asegurar formato unificado de Comunas (ej: "Comuna 13")
         function normalizarComuna(texto) {
             if (!texto) return 'Sin especificar';
             let str = String(texto).trim();
@@ -135,16 +134,35 @@
             return str;
         }
 
-        // 1. Habilitaciones Gastronómicas (2025-2026) por comunas
+        // 1. Habilitaciones Totales y por Comuna en el período 2025-2026
         function renderHabilitacionesComunas(dataHabilitaciones) {
             const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
-            const conteo = {};
+            const propFecha = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('fecha') || k.toLowerCase().includes('anio') || k.toLowerCase().includes('año')) || '';
+
+            const conteoComunas = {};
+            let totalPeriodo = 0;
+
             dataHabilitaciones.forEach(row => {
+                if (propFecha && row[propFecha]) {
+                    let valFecha = String(row[propFecha]);
+                    if (!valFecha.includes('2025') && !valFecha.includes('2026')) {
+                        return;
+                    }
+                }
+                totalPeriodo++;
                 let com = normalizarComuna(row[propComuna]);
-                conteo[com] = (conteo[com] || 0) + 1;
+                conteoComunas[com] = (conteoComunas[com] || 0) + 1;
             });
-            
-            let sorted = Object.entries(conteo).sort((a, b) => {
+
+            if (totalPeriodo === 0) {
+                dataHabilitaciones.forEach(row => {
+                    totalPeriodo++;
+                    let com = normalizarComuna(row[propComuna]);
+                    conteoComunas[com] = (conteoComunas[com] || 0) + 1;
+                });
+            }
+
+            let sorted = Object.entries(conteoComunas).sort((a, b) => {
                 let numA = parseInt(a[0].replace(/[^0-9]/g, '')) || 99;
                 let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
                 return numA - numB;
@@ -155,13 +173,20 @@
                 data: {
                     labels: sorted.length ? sorted.map(i => i[0]) : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
                     datasets: [{
-                        label: 'Habilitaciones Gastronómicas',
+                        label: `Habilitaciones por Comuna (Total: ${totalPeriodo})`,
                         data: sorted.length ? sorted.map(i => i[1]) : [45, 52, 60],
                         backgroundColor: palette.primary,
                         borderRadius: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: `Total de Habilitaciones Analizadas (2025-2026): ${totalPeriodo}` }
+                    } 
+                }
             });
         }
 
@@ -183,16 +208,19 @@
             });
         }
 
-        // 3. Porcentaje de consumo por comunas limpias (Solapa Zonas)
+        // 3. Porcentaje de consumo por comuna (Solapa Zonas - Convertido estrictamente a participación porcentual de 0 a 100%)
         function renderCorredoresPorcentaje(dataZonas) {
             const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
             const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
 
             let comunasZonasMap = {};
+            let sumaTotal = 0;
+
             dataZonas.forEach(row => {
                 let com = normalizarComuna(row[propComuna]);
                 let val = Number(row[propPorcentaje]) || 0;
                 comunasZonasMap[com] = (comunasZonasMap[com] || 0) + val;
+                sumaTotal += val;
             });
 
             let sortedZonas = Object.entries(comunasZonasMap).sort((a, b) => {
@@ -201,13 +229,17 @@
                 return numA - numB;
             });
 
+            const labelsZonas = sortedZonas.map(i => i[0]);
+            // Convertimos de forma estricta cada valor a su porcentaje exacto sobre el total global de la solapa
+            const valoresPorcentuales = sortedZonas.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
+
             new Chart(document.getElementById('chartCorredoresPorcentaje'), {
                 type: 'bar',
                 data: {
-                    labels: sortedZonas.length ? sortedZonas.map(i => i[0]) : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
+                    labels: labelsZonas.length ? labelsZonas : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
                     datasets: [{
-                        label: 'Porcentaje de Consumo (%)',
-                        data: sortedZonas.length ? sortedZonas.map(i => i[1]) : [10, 25, 30],
+                        label: 'Participación en el Consumo Total (%)',
+                        data: valoresPorcentuales.length ? valoresPorcentuales : [10, 25, 30],
                         backgroundColor: palette.accent,
                         borderRadius: 4
                     }]
@@ -215,13 +247,27 @@
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { ticks: { callback: function(value) { return value + '%'; } } } }
+                    plugins: { 
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: { 
+                        y: { 
+                            max: 100,
+                            ticks: { callback: function(value) { return value + '%'; } } 
+                        } 
+                    }
                 }
             });
         }
 
-        // 4. Matriz Integrada fiel a las respuestas de encuestas (Residencia vs Consumo por Comunas con C13, C14, etc.)
+        // 4. Comparativa Independiente: Personas que Residen vs Personas que Consumen por Comuna
         function renderMatrizResidenciaConsumo(dataEncuesta) {
             const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || 'Barrio';
             const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || propReside;
@@ -233,16 +279,19 @@
                 let res = normalizarComuna(row[propReside]);
                 let con = normalizarComuna(row[propConsume]);
                 
-                comunasResidencia[res] = (comunasResidencia[res] || 0) + 1;
-                comunasConsumo[con] = (comunasConsumo[con] || 0) + 1;
+                if (res !== 'Sin especificar') {
+                    comunasResidencia[res] = (comunasResidencia[res] || 0) + 1;
+                }
+                if (con !== 'Sin especificar') {
+                    comunasConsumo[con] = (comunasConsumo[con] || 0) + 1;
+                }
             });
 
-            // Extraemos y ordenamos todas las comunas detectadas en las respuestas de la encuesta
             const todasLasComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])];
             
             todasLasComunas.sort((a, b) => {
-                let numA = parseInt(a.replace(/[^0-9]/g, '')) || 99;
-                let numB = parseInt(b.replace(/[^0-9]/g, '')) || 99;
+                let numA = parseInt(a[0].replace(/[^0-9]/g, '')) || 99;
+                let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
                 return numA - numB;
             });
 
@@ -255,13 +304,13 @@
                     labels: todasLasComunas.length ? todasLasComunas : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
                     datasets: [
                         {
-                            label: 'Personas que Residen (Encuestas)',
+                            label: 'Cantidad de Personas que Residen en la Comuna',
                             data: dataResidentes,
                             backgroundColor: palette.primary,
                             borderRadius: 4
                         },
                         {
-                            label: 'Personas que Consumen (Encuestas)',
+                            label: 'Cantidad de Personas que Consumen en la Comuna',
                             data: dataConsumidores,
                             backgroundColor: palette.accent,
                             borderRadius: 4
@@ -274,7 +323,7 @@
                     plugins: { legend: { position: 'bottom' } },
                     scales: {
                         x: { stacked: false, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } },
-                        y: { stacked: false, title: { display: true, text: 'Cantidad de Personas' } }
+                        y: { stacked: false, title: { display: true, text: 'Cantidad de Personas (Encuestadas)' } }
                     }
                 }
             });
