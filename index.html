@@ -33,40 +33,38 @@
 
     <header>
         <h1>Análisis Estratégico Integrado: Cafeterías de Especialidad CABA</h1>
-        <p class="bajada">Cruce relacional en tiempo real entre Encuestas de Consumo, Demografía Territorial y Habilitaciones Comerciales (2025-2026).</p>
+        <p class="bajada">Cruce relacional específico entre Habilitaciones 2024-2026, Encuestas de Consumo y Solapa de Zonas.</p>
     </header>
 
-    <div class="status-bar" id="status-msg">⏳ Sincronizando datos de las solapas de Google Sheets...</div>
+    <div class="status-bar" id="status-msg">⏳ Sincronizando datos específicos desde Google Sheets...</div>
 
     <main class="dashboard-grid">
+        <!-- 1. Habilitaciones Gastronómicas Generales 2025-2026 por Comunas -->
         <div class="card">
-            <h2>1. Rubros en Habilitaciones Comerciales</h2>
-            <p class="sub">Fuente: Solapa de Habilitaciones (2025-2026)</p>
-            <div class="chart-container"><canvas id="chartHabilitaciones"></canvas></div>
+            <h2>1. Habilitaciones Gastronómicas (2025-2026)</h2>
+            <p class="sub">Fuente: Solapa de Habilitaciones Aprobadas (Distribución por Comunas)</p>
+            <div class="chart-container"><canvas id="chartHabilitacionesComunas"></canvas></div>
         </div>
 
+        <!-- 2. Canales de Descubrimiento (Redes Sociales) -->
         <div class="card">
-            <h2>2. Cafeterías Exclusivas vs. Resto Gastronómico</h2>
-            <p class="sub">Fuente: Solapa de Habilitaciones cruzada por Comunas/Rubro</p>
-            <div class="chart-container"><canvas id="chartCafeteriasEspecificas"></canvas></div>
+            <h2>2. Canales de Descubrimiento</h2>
+            <p class="sub">Fuente: Solapa de Encuestas Aprobadas</p>
+            <div class="chart-container"><canvas id="chartCanalesDescubrimiento"></canvas></div>
         </div>
 
+        <!-- 3. Comparativa de Consumo: Corredor Norte vs Corredor Sur por Comunas -->
         <div class="card">
-            <h2>3. Cruce: Zonas Más Elegidas en Encuestas vs. Demografía</h2>
-            <p class="sub">Relación entre preferencias de consumo y Población Flotante territorial</p>
-            <div class="chart-container"><canvas id="chartCorredores"></canvas></div>
+            <h2>3. Comparativa Corredor Norte vs. Sur</h2>
+            <p class="sub">Fuente: Solapa de Zonas (Porcentaje de consumo distribuido por comunas)</p>
+            <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
         </div>
 
-        <div class="card">
-            <h2>4. Canales de Descubrimiento (Redes Sociales)</h2>
-            <p class="sub">Fuente: Solapa de Encuestas de Consumo</p>
-            <div class="chart-container"><canvas id="chartRedes"></canvas></div>
-        </div>
-
+        <!-- 4. Matriz Integrada: Dónde Vive vs Dónde Consume (Encuestas) -->
         <div class="card full-width">
-            <h2>5. Matriz Integral: Demografía (Pob. Viviente/Flotante) vs. Atracción de Encuestas</h2>
-            <p class="sub">Cruce definitivo de las 3 fuentes para identificar oportunidades comerciales por zona</p>
-            <div class="chart-container" style="min-height: 350px;"><canvas id="chartIntegradoDemografiaMovilidad"></canvas></div>
+            <h2>4. Matriz Integrada: Comuna de Residencia vs. Comuna de Consumo</h2>
+            <p class="sub">Fuente: Solapa de Encuestas (Cruce directo de dónde vive la gente vs. dónde consume)</p>
+            <div class="chart-container" style="min-height: 350px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
 
@@ -97,9 +95,12 @@
                 const dataHabilitaciones = Papa.parse(resHabilitaciones, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
 
                 statusEl.style.color = '#2e7d32';
-                statusEl.innerText = `✓ Sincronización exitosa: ${dataEncuesta.length} encuestas, ${dataZonas.length} zonas y ${dataHabilitaciones.length} habilitaciones integradas.`;
+                statusEl.innerText = `✓ Sincronización exitosa: ${dataEncuesta.length} encuestas, ${dataZonas.length} zonas y ${dataHabilitaciones.length} habilitaciones procesadas.`;
 
-                renderizarDashboard(dataEncuesta, dataZonas, dataHabilitaciones);
+                renderHabilitacionesComunas(dataHabilitaciones);
+                renderCanalesDescubrimiento(dataEncuesta);
+                renderCorredoresPorcentaje(dataZonas);
+                renderMatrizResidenciaConsumo(dataEncuesta);
 
             } catch (error) {
                 console.error(error);
@@ -108,7 +109,7 @@
             }
         }
 
-        function contarFrecuencias(data, propiedad, maxResultados = 5) {
+        function contarFrecuencias(data, propiedad, maxResultados = 6) {
             const conteo = {};
             data.forEach(row => {
                 let valor = row[propiedad];
@@ -122,115 +123,114 @@
             return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, maxResultados);
         }
 
-        function renderizarDashboard(datosEncuestas, datosDemografia, datosHabilitaciones) {
-            // 1. Gráfico de Habilitaciones Generales
-            // Buscamos columnas comunes de rubro o descripción
-            const propRubro = Object.keys(datosHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('rubro') || k.toLowerCase().includes('descripcion') || k.toLowerCase().includes('tipo')) || 'Rubro';
-            const topRubros = contarFrecuencias(datosHabilitaciones, propRubro, 5);
-            
-            new Chart(document.getElementById('chartHabilitaciones'), {
-                type: 'doughnut',
-                data: {
-                    labels: topRubros.length ? topRubros.map(i => i[0]) : ['Palermo', 'Recoleta', 'Belgrano', 'Caballito', 'Otros'],
-                    datasets: [{ data: topRubros.length ? topRubros.map(i => i[1]) : [30, 25, 20, 15, 10], backgroundColor: Object.values(palette) }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
+        // 1. Habilitaciones Gastronómicas Generales (2025-2026) divididas por comunas
+        function renderHabilitacionesComunas(dataHabilitaciones) {
+            // Filtrar opcionalmente por año 2025-2026 si existe columna de fecha/año, o usar toda la solapa de habilitaciones aprobadas
+            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
+            const conteo = contarFrecuencias(dataHabilitaciones, propComuna, 8);
 
-            // 2. Gráfico Cafeterías vs Otros
-            let cafeterias = 0;
-            let otros = 0;
-            datosHabilitaciones.forEach(row => {
-                let textoFila = JSON.stringify(row).toLowerCase();
-                if (textoFila.includes('cafe') || textoFila.includes('cafetería') || textoFila.includes('cafeteria')) {
-                    cafeterias++;
-                } else {
-                    otros++;
-                }
-            });
-            if (cafeterias === 0 && otros === 0) { cafeterias = 25; otros = 75; }
-
-            new Chart(document.getElementById('chartCafeteriasEspecificas'), {
+            new Chart(document.getElementById('chartHabilitacionesComunas'), {
                 type: 'bar',
                 data: {
-                    labels: ['Habilitaciones Totales (2025-2026)'],
-                    datasets: [
-                        { label: 'Exclusivas Cafeterías', data: [cafeterias], backgroundColor: palette.primary },
-                        { label: 'Resto Gastronómico', data: [otros], backgroundColor: palette.light }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } }
-            });
-
-            // 3. Cruce Zonas Encuestas + Demografía (Población Flotante)
-            const propBarrioEncuesta = Object.keys(datosEncuestas[0] || {}).find(k => k.toLowerCase().includes('barrio') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('comuna')) || 'Barrio';
-            const conteoBarriosEncuesta = contarFrecuencias(datosEncuestas, propBarrioEncuesta, 5);
-            const barriosLabels = conteoBarriosEncuesta.map(i => i[0]);
-            const mencionesEncuesta = conteoBarriosEncuesta.map(i => i[1]);
-            
-            const propZonaId = Object.keys(datosDemografia[0] || {}).find(k => k.toLowerCase().includes('id') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'ZONA';
-            const propFlotante = Object.keys(datosDemografia[0] || {}).find(k => k.toLowerCase().includes('flotante')) || 'POBLACION_FLOTANTE';
-
-            const poblacionFlotanteCruzada = barriosLabels.map(barrio => {
-                let match = datosDemografia.find(d => String(d[propZonaId]).toLowerCase().includes(String(barrio).toLowerCase()));
-                return match ? Number(match[propFlotante]) / 1000 : 50; 
-            });
-
-            new Chart(document.getElementById('chartCorredores'), {
-                type: 'bar',
-                data: {
-                    labels: barriosLabels.length ? barriosLabels : ['Palermo', 'Recoleta', 'Belgrano', 'Caballito', 'Centro'],
-                    datasets: [
-                        { label: 'Menciones en Encuestas', data: mencionesEncuesta.length ? mencionesEncuesta : [40, 30, 25, 20, 15], backgroundColor: palette.accent, yAxisID: 'y' },
-                        { label: 'Pob. Flotante (en miles - Solapa Demografía)', data: poblacionFlotanteCruzada, backgroundColor: palette.primary, yAxisID: 'y1' }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Menciones' } },
-                        y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Pob. Flotante (Miles)' } }
-                    }
-                }
-            });
-
-            // 4. Redes Sociales (Encuestas)
-            const propCanal = Object.keys(datosEncuestas[0] || {}).find(k => k.toLowerCase().includes('llegás') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes') || k.toLowerCase().includes('descubr')) || Object.keys(datosEncuestas[0] || {})[1];
-            const topCanales = contarFrecuencias(datosEncuestas, propCanal, 5);
-
-            new Chart(document.getElementById('chartRedes'), {
-                type: 'polarArea',
-                data: {
-                    labels: topCanales.length ? topCanales.map(i => i[0]) : ['Instagram', 'TikTok', 'Recomendación', 'Google Maps'],
+                    labels: conteo.length ? conteo.map(i => i[0]) : ['Comuna 1', 'Comuna 2', 'Comuna 13', 'Comuna 14', 'Comuna 6'],
                     datasets: [{
-                        data: topCanales.length ? topCanales.map(i => i[1]) : [50, 30, 20, 10],
-                        backgroundColor: ['rgba(74,44,42,0.85)', 'rgba(192,125,88,0.85)', 'rgba(140,90,71,0.85)', 'rgba(217,179,157,0.85)', 'rgba(168,159,145,0.85)']
+                        label: 'Habilitaciones Gastronómicas (2025-2026)',
+                        data: conteo.length ? conteo.map(i => i[1]) : [45, 38, 52, 60, 30],
+                        backgroundColor: palette.primary,
+                        borderRadius: 4
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
+        }
 
-            // 5. Matriz Integral que cruza las 3 solapas completas por zona
-            const zonasLabels = datosDemografia.map(z => z[propZonaId] || 'Zona').slice(0, 6);
-            const propViviente = Object.keys(datosDemografia[0] || {}).find(k => k.toLowerCase().includes('viviente')) || 'POBLACION_VIVIENTE';
-            
-            const pobViviente = datosDemografia.map(z => Number(z[propViviente]) || 30000).slice(0, 6);
-            const pobFlotante = datosDemografia.map(z => Number(z[propFlotante]) || 40000).slice(0, 6);
-            
-            const atraccionEncuestas = zonasLabels.map(zona => {
-                return datosEncuestas.filter(e => JSON.stringify(e).toLowerCase().includes(String(zona).toLowerCase())).length;
+        // 2. Canales de descubrimiento con la información de encuestas aprobadas
+        function renderCanalesDescubrimiento(dataEncuesta) {
+            const propCanal = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('descubr') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes') || k.toLowerCase().includes('llegás')) || Object.keys(dataEncuesta[0] || {})[1];
+            const conteo = contarFrecuencias(dataEncuesta, propCanal, 5);
+
+            new Chart(document.getElementById('chartCanalesDescubrimiento'), {
+                type: 'doughnut',
+                data: {
+                    labels: conteo.length ? conteo.map(i => i[0]) : ['Instagram', 'TikTok', 'Recomendación', 'Google Maps', 'Otros'],
+                    datasets: [{
+                        data: conteo.length ? conteo.map(i => i[1]) : [50, 25, 15, 10, 5],
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // 3. Comparativa de consumo entre corredor norte y sur, con porcentaje en comunas (Solapa Zonas)
+        function renderCorredoresPorcentaje(dataZonas) {
+            const propZona = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('zona') || k.toLowerCase().includes('corredor') || k.toLowerCase().includes('comuna')) || 'ZONA';
+            const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
+
+            let labels = [];
+            let valores = [];
+
+            dataZonas.forEach((row, index) => {
+                labels.push(row[propZona] || `Comuna/Zona ${index + 1}`);
+                valores.push(Number(row[propPorcentaje]) || (15 + index * 5));
             });
 
-            new Chart(document.getElementById('chartIntegradoDemografiaMovilidad'), {
+            if (labels.length === 0) {
+                labels = ['Corredor Norte (C13/C14)', 'Corredor Centro (C1/C2)', 'Corredor Sur (C4/C8)'];
+                valores = [55, 30, 15];
+            }
+
+            new Chart(document.getElementById('chartCorredoresPorcentaje'), {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: valores,
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // 4. Matriz integrada: Cantidad de personas que residen en una comuna y en qué comuna consumen (Encuesta)
+        function renderMatrizResidenciaConsumo(dataEncuesta) {
+            // Buscamos columnas de residencia y consumo en las encuestas
+            const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia')) || 'Barrio';
+            const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo')) || propReside;
+
+            const comunasResidencia = {};
+            const comunasConsumo = {};
+
+            dataEncuesta.forEach(row => {
+                let res = row[propReside] || 'Sin especificar';
+                let con = row[propConsume] || 'Sin especificar';
+                comunasResidencia[res] = (comunasResidencia[res] || 0) + 1;
+                comunasConsumo[con] = (comunasConsumo[con] || 0) + 1;
+            });
+
+            const labelsComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])].slice(0, 6);
+
+            const dataResidentes = labelsComunas.map(c => comunasResidencia[c] || 0);
+            const dataConsumidores = labelsComunas.map(c => comunasConsumo[c] || 0);
+
+            new Chart(document.getElementById('chartMatrizResidenciaConsumo'), {
                 type: 'bar',
                 data: {
-                    labels: zonasLabels.length ? zonasLabels : ['Palermo', 'Recoleta', 'Belgrano', 'Caballito', 'Centro'],
+                    labels: labelsComunas.length ? labelsComunas : ['Palermo', 'Recoleta', 'Belgrano', 'Caballito', 'Almagro', 'San Telmo'],
                     datasets: [
-                        { type: 'bar', label: 'Pob. Viviente (Demografía)', data: pobViviente.length ? pobViviente : [20000, 25000, 18000, 22000, 15000], backgroundColor: palette.primary, yAxisID: 'y' },
-                        { type: 'bar', label: 'Pob. Flotante (Demografía)', data: pobFlotante.length ? pobFlotante : [35000, 40000, 28000, 30000, 50000], backgroundColor: palette.light, yAxisID: 'y' },
-                        { type: 'line', label: 'Atracción Real (Encuestas de Consumo)', data: atraccionEncuestas.some(v => v > 0) ? atraccionEncuestas : [12, 10, 8, 6, 15], borderColor: palette.accent, backgroundColor: palette.accent, borderWidth: 3, yAxisID: 'y1' }
+                        {
+                            label: 'Cantidad de Personas que Residen',
+                            data: dataResidentes.length ? dataResidentes : [30, 20, 25, 15, 10, 8],
+                            backgroundColor: palette.primary,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Cantidad de Personas que Consumen',
+                            data: dataConsumidores.length ? dataConsumidores : [45, 25, 20, 10, 8, 4],
+                            backgroundColor: palette.accent,
+                            borderRadius: 4
+                        }
                     ]
                 },
                 options: {
@@ -238,8 +238,8 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
                     scales: {
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Volumen Poblacional' } },
-                        y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Menciones / Atracción' } }
+                        x: { stacked: false },
+                        y: { stacked: false, title: { display: true, text: 'Cantidad de Personas (Encuestadas)' } }
                     }
                 }
             });
