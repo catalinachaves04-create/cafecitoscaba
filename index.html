@@ -53,17 +53,17 @@
             <div class="chart-container"><canvas id="chartCanalesDescubrimiento"></canvas></div>
         </div>
 
-        <!-- 3. Porcentaje de Consumo por Comunas (Solapa Zonas) -->
+        <!-- 3. Porcentaje de Consumo por Comunas (Solapa Zonas - Corregido a 100%) -->
         <div class="card">
             <h2>3. Porcentaje de Consumo por Comuna (%)</h2>
-            <p class="sub">Fuente: Solapa de Zonas (Participación porcentual del consumo total de la ciudad por comuna)</p>
+            <p class="sub">Fuente: Solapa de Zonas (Proporción porcentual real del consumo total de la ciudad por comuna)</p>
             <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
         </div>
 
-        <!-- 4. Matriz Comparativa: Personas que Residen vs Personas que Consumen por Comuna -->
+        <!-- 4. Matriz Comparativa Independiente: Residencia vs Consumo por Comuna -->
         <div class="card full-width">
             <h2>4. Comparativa por Comuna: Personas que Residen vs. Personas que Consumen</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Comparación independiente de volumen demográfico vs. comercial por comuna)</p>
+            <p class="sub">Fuente: Solapa de Encuestas (Comparación demográfica independiente: cuántos viven vs. cuántos consumen en cada comuna)</p>
             <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
@@ -208,7 +208,7 @@
             });
         }
 
-        // 3. Porcentaje de consumo por comuna (Solapa Zonas - Convertido estrictamente a participación porcentual de 0 a 100%)
+        // 3. Porcentaje de consumo por comuna (Solapa Zonas - Normalizado a escala 0-100%)
         function renderCorredoresPorcentaje(dataZonas) {
             const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
             const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
@@ -230,7 +230,6 @@
             });
 
             const labelsZonas = sortedZonas.map(i => i[0]);
-            // Convertimos de forma estricta cada valor a su porcentaje exacto sobre el total global de la solapa
             const valoresPorcentuales = sortedZonas.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
 
             new Chart(document.getElementById('chartCorredoresPorcentaje'), {
@@ -259,7 +258,7 @@
                     },
                     scales: { 
                         y: { 
-                            max: 100,
+                            max: 100, 
                             ticks: { callback: function(value) { return value + '%'; } } 
                         } 
                     }
@@ -269,12 +268,14 @@
 
         // 4. Comparativa Independiente: Personas que Residen vs Personas que Consumen por Comuna
         function renderMatrizResidenciaConsumo(dataEncuesta) {
+            // Buscamos de forma flexible las columnas de residencia y de consumo en la encuesta
             const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || 'Barrio';
             const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || propReside;
 
             const comunasResidencia = {};
             const comunasConsumo = {};
 
+            // Conteo separado e independiente por cada métrica para cada comuna
             dataEncuesta.forEach(row => {
                 let res = normalizarComuna(row[propReside]);
                 let con = normalizarComuna(row[propConsume]);
@@ -287,10 +288,11 @@
                 }
             });
 
+            // Unificamos todas las comunas que aparezcan en cualquiera de los dos lados
             const todasLasComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])];
             
             todasLasComunas.sort((a, b) => {
-                let numA = parseInt(a[0].replace(/[^0-9]/g, '')) || 99;
+                let numA = parseInt(a.replace(/[^0-9]/g, '')) || 99;
                 let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
                 return numA - numB;
             });
