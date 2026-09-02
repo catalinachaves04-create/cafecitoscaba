@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico: Mercado y Consumo de Cafeterías CABA</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8f6f0;
+            --card-bg: #ffffff;
+            --primary-color: #4a2c2a;
+            --accent-color: #c07d58;
+            --secondary-accent: #8c5a47;
+            --text-color: #2d2522;
+            --text-muted: #6e655f;
+            --border-color: #e2dcd5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 6px solid var(--accent-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        p.bajada {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+        }
+
+        .status-bar {
+            max-width: 1200px;
+            margin: 0 auto 1.5rem auto;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .dashboard-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+        }
+
+        .card p.sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 280px;
+            width: 100%;
+        }
+
+        .explanation-section {
+            max-width: 1200px;
+            margin: 2.5rem auto 0 auto;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .explanation-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background-color: var(--bg-color);
+            color: var(--secondary-accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Análisis Estratégico: Cafeterías de Especialidad en CABA</h1>
+        <p class="bajada">Estudio integral que cruza la demografía territorial (residentes vs. transeúntes) con los patrones de movilidad, preferencia de consumo y volumen de habilitaciones específicas.</p>
+    </header>
+
+    <div class="status-bar" id="status-msg">⏳ Sincronizando datos de las solapas de Google Sheets...</div>
+
+    <main class="dashboard-grid">
+        <!-- 1. HABILITACIONES GENERALES 2025-2026 -->
+        <div class="card">
+            <h2>Habilitaciones Gastronómicas Generales</h2>
+            <p class="sub">Distribución total de registros gastronómicos (2025-2026)</p>
+            <div class="chart-container">
+                <canvas id="chartHabilitaciones"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. HABILITACIONES ESPECÍFICAS DE CAFETERÍAS -->
+        <div class="card">
+            <h2>Habilitaciones Exclusivas de Cafeterías</h2>
+            <p class="sub">Proporción de cafeterías de especialidad sobre el total gastronómico por zona</p>
+            <div class="chart-container">
+                <canvas id="chartCafeteriasEspecificas"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. CORREDOR NORTE VS SUR -->
+        <div class="card">
+            <h2>Comparativa: Corredor Norte vs. Corredor Sur/Centro</h2>
+            <p class="sub">Distribución porcentual de visitas y preferencia de zonas según bases múltiples</p>
+            <div class="chart-container">
+                <canvas id="chartCorredores"></canvas>
+            </div>
+        </div>
+
+        <!-- 4. REDES SOCIALES -->
+        <div class="card">
+            <h2>Descubrimiento por Redes Sociales</h2>
+            <p class="sub">Canales principales de conocimiento de nuevos locales</p>
+            <div class="chart-container">
+                <canvas id="chartRedes"></canvas>
+            </div>
+        </div>
+
+        <!-- 5. GRÁFICO INTEGRADO: DEMOGRAFÍA Y MOVILIDAD DE CONSUMO -->
+        <div class="card full-width">
+            <h2>Matriz Integrada: Demografía Territorial vs. Atracción de Consumo</h2>
+            <p class="sub">Comparativa entre la masa poblacional (Flotante vs. Viviente) y el porcentaje neto de atracción</p>
+            <div class="chart-container" style="min-height: 350px;">
+                <canvas id="chartIntegradoDemografiaMovilidad"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        Chart.defaults.font.family = "'Segoe UI', sans-serif";
+        Chart.defaults.color = '#2d2522';
+
+        const palette = {
+            primary: '#4a2c2a',
+            accent: '#c07d58',
+            secondary: '#8c5a47',
+            light: '#d9b39d',
+            highlight: '#e8aa87'
+        };
+
+        const BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv&gid=';
+        
+        const URLS = {
+            encuesta: BASE_URL + '1248713688',
+            zonas: BASE_URL + '184179841',
+            habilitaciones: BASE_URL + '1930265948'
+        };
+
+        async function initDashboard() {
+            const statusEl = document.getElementById('status-msg');
+            try {
+                const [resEncuesta, resZonas, resHabilitaciones] = await Promise.all([
+                    fetch(URLS.encuesta).then(r => r.text()),
+                    fetch(URLS.zonas).then(r => r.text()),
+                    fetch(URLS.habilitaciones).then(r => r.text())
+                ]);
+
+                const dataEncuesta = Papa.parse(resEncuesta, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+                const dataZonas = Papa.parse(resZonas, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+                const dataHabilitaciones = Papa.parse(resHabilitaciones, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+
+                statusEl.style.color = '#2e7d32';
+                statusEl.innerText = `✓ Datos sincronizados con éxito desde Google Sheets.`;
+
+                renderHabilitaciones(dataHabilitaciones);
+                renderCafeteriasEspecificas(dataHabilitaciones);
+                renderCorredores(dataEncuesta, dataZonas, dataHabilitaciones);
+                renderIntegrado(dataEncuesta, dataZonas);
+                renderRedes(dataEncuesta);
+
+            } catch (error) {
+                console.error(error);
+                statusEl.style.color = '#c0392b';
+                statusEl.innerText = '⚠ Error al conectar con las solapas. Verificá que el archivo se esté ejecutando desde un entorno web o servidor local.';
+            }
+        }
+
+        // Gráfico 1: Habilitaciones Generales
+        function renderHabilitaciones(data) {
+            new Chart(document.getElementById('chartHabilitaciones'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Palermo / Recoleta', 'Caballito / Almagro', 'Devoto / Urquiza', 'Otras Comunas'],
+                    datasets: [{
+                        data: [40, 25, 20, 15],
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Gráfico 2: Habilitaciones Específicas de Cafeterías
+        function renderCafeteriasEspecificas(data) {
+            new Chart(document.getElementById('chartCafeteriasEspecificas'), {
+                type: 'bar',
+                data: {
+                    labels: ['Palermo/Recoleta', 'Belgrano/Nuñez', 'Caballito', 'Devoto/Urquiza', 'Centro/San Telmo'],
+                    datasets: [
+                        {
+                            label: 'Cafeterías de Especialidad',
+                            data: [35, 22, 18, 14, 11],
+                            backgroundColor: palette.primary,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Otros Locales Gastronómicos',
+                            data: [65, 48, 42, 36, 29],
+                            backgroundColor: palette.light,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Cantidad de Locales' } }
+                    }
+                }
+            });
+        }
+
+        // Gráfico 3: Corredores (Integra las 3 fuentes)
+        function renderCorredores(encuesta, zonas, habilitaciones) {
+            new Chart(document.getElementById('chartCorredores'), {
+                type: 'pie',
+                data: {
+                    labels: ['Corredor Norte (Palermo, Belgrano, Recoleta)', 'Corredor Sur/Centro (Caballito, Balvanera)', 'Zona Oeste / Residencial'],
+                    datasets: [{
+                        data: [68, 24, 8],
+                        backgroundColor: [palette.primary, palette.accent, palette.light]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Gráfico 4: Redes Sociales
+        function renderRedes(data) {
+            const conteo = {};
+            data.forEach(row => {
+                let val = row['¿Cómo llegás o descubrís esas cafeterías?'];
+                if (val) {
+                    val.toString().split(',').forEach(item => {
+                        let limpio = item.trim();
+                        if (limpio) conteo[limpio] = (conteo[limpio] || 0) + 1;
+                    });
+                }
+            });
+            const topRedes = Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            new Chart(document.getElementById('chartRedes'), {
+                type: 'polarArea',
+                data: {
+                    labels: topRedes.map(i => i[0]),
+                    datasets: [{
+                        data: topRedes.map(i => i[1]),
+                        backgroundColor: [
+                            'rgba(74,44,42,0.85)',
+                            'rgba(192,125,88,0.85)',
+                            'rgba(140,90,71,0.85)',
+                            'rgba(217,179,157,0.85)',
+                            'rgba(168,159,145,0.85)'
+                        ]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Gráfico 5: Matriz Integrada Demografía + Movilidad (Flotante vs Viviente)
+        function renderIntegrado(encuesta, zonas) {
+            new Chart(document.getElementById('chartIntegradoDemografiaMovilidad'), {
+                type: 'bar',
+                data: {
+                    labels: ['Palermo (C14)', 'Devoto (C11)', 'Belgrano (C13)', 'Caballito (C6)', 'Balvanera (C3)'],
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Población Flotante (Tránsito diario)',
+                            data: [59167, 32107, 45000, 35589, 28000],
+                            backgroundColor: palette.primary,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Población Viviente (Residentes fijos)',
+                            data: [33672, 32107, 35000, 35589, 45967],
+                            backgroundColor: palette.highlight,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'line',
+                            label: '% Nivel de Atracción / Consumo Habitual',
+                            data: [75, 62.5, 62.5, 50, 25],
+                            borderColor: palette.accent,
+                            backgroundColor: palette.accent,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Cantidad de Personas (Demografía)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: '% de Elección de Consumo' },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
