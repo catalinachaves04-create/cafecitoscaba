@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Integral: Cafeterías y Mercado CABA</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8f6f0;
+            --card-bg: #ffffff;
+            --primary-color: #4a2c2a;
+            --accent-color: #c07d58;
+            --secondary-accent: #8c5a47;
+            --text-color: #2d2522;
+            --text-muted: #6e655f;
+            --border-color: #e2dcd5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 6px solid var(--accent-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        p.bajada {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+        }
+
+        .status-bar {
+            max-width: 1200px;
+            margin: 0 auto 1.5rem auto;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            color: var(--primary-color);
+            margin-bottom: 0.3rem;
+        }
+
+        .card p.sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 280px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Dashboard Estratégico Integral: Mercado y Consumo CABA</h1>
+        <p class="bajada">Análisis cruzado en tiempo real entre la encuesta de consumo, los rubros predominantes por zona y las habilitaciones oficiales.</p>
+    </header>
+
+    <!-- Estado de carga dinámico -->
+    <div class="status-bar" id="status-msg">⏳ Conectando con las solapas de Google Sheets...</div>
+
+    <main class="dashboard-grid">
+        <!-- 1. Zonas de Preferencia (Encuesta) -->
+        <div class="card">
+            <h2>1 & 2. Zonas de Preferencia y Cafeterías</h2>
+            <p class="sub">Barrios y localidades más visitados según la encuesta</p>
+            <div class="chart-container">
+                <canvas id="chartZonas"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. Rubros predominantes por zona (Pestaña Zonas) -->
+        <div class="card">
+            <h2>1. Rubros Comerciales Predominantes en CABA</h2>
+            <p class="sub">Distribución de rubros comerciales según base de datos territorial</p>
+            <div class="chart-container">
+                <canvas id="chartRubrosZonas"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Residencia vs Consumo (Encuesta) -->
+        <div class="card">
+            <h2>3. Comparativa: Dónde Viven vs. Dónde Consumen</h2>
+            <p class="sub">Cruces de movilidad habitacional de los encuestados</p>
+            <div class="chart-container">
+                <canvas id="chartResidenciaConsumo"></canvas>
+            </div>
+        </div>
+
+        <!-- 4. Corredor Norte vs Sur (Encuesta) -->
+        <div class="card">
+            <h2>4. Corredor Norte vs. Corredor Sur/Centro</h2>
+            <p class="sub">Nivel de concentración de consumo geográfico</p>
+            <div class="chart-container">
+                <canvas id="chartCorredores"></canvas>
+            </div>
+        </div>
+
+        <!-- 5. Descubrimiento por Redes Sociales (Encuesta) -->
+        <div class="card full-width">
+            <h2>5. Descubrimiento y Canales Digitales</h2>
+            <p class="sub">Cómo y dónde descubren los usuarios las propuestas gastronómicas</p>
+            <div class="chart-container" style="min-height: 320px;">
+                <canvas id="chartRedes"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        Chart.defaults.font.family = "'Segoe UI', sans-serif";
+        Chart.defaults.color = '#2d2522';
+
+        const palette = {
+            primary: '#4a2c2a',
+            accent: '#c07d58',
+            secondary: '#8c5a47',
+            light: '#d9b39d',
+            highlight: '#e8aa87'
+        };
+
+        // URLs individuales por cada pestaña usando su respectivo gid
+        const BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv&gid=';
+        
+        const URLS = {
+            encuesta: BASE_URL + '1248713688',
+            zonas: BASE_URL + '184179841',
+            habilitaciones: BASE_URL + '1930265948'
+        };
+
+        async function initDashboard() {
+            const statusEl = document.getElementById('status-msg');
+            try {
+                // Realizamos fetch concurrente a todas las pestañas de Google Sheets
+                const [resEncuesta, resZonas, resHabilitaciones] = await Promise.all([
+                    fetch(URLS.encuesta).then(r => r.text()),
+                    fetch(URLS.zonas).then(r => r.text()),
+                    fetch(URLS.habilitaciones).then(r => r.text())
+                ]);
+
+                const dataEncuesta = Papa.parse(resEncuesta, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+                const dataZonas = Papa.parse(resZonas, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+                const dataHabilitaciones = Papa.parse(resHabilitaciones, { header: true, dynamicTyping: true, skipEmptyLines: true }).data;
+
+                statusEl.style.color = '#2e7d32';
+                statusEl.innerText = `✓ Sincronización exitosa: ${dataEncuesta.length} encuestas, ${dataZonas.length} registros de zonas y ${dataHabilitaciones.length} habilitaciones procesadas.`;
+
+                // Renderizar gráficos integrando la información de todas las fuentes
+                renderCharts(dataEncuesta, dataZonas, dataHabilitaciones);
+
+            } catch (error) {
+                console.error(error);
+                statusEl.style.color = '#c0392b';
+                statusEl.innerText = '⚠ Error de red o permisos CORS al conectar con las solapas. Asegurate de levantar el HTML desde un servidor local (ej. Live Server).';
+            }
+        }
+
+        function procesarFrecuencia(data, columna, limite = 5) {
+            const conteo = {};
+            data.forEach(row => {
+                let val = row[columna];
+                if (val) {
+                    val.toString().split(',').forEach(item => {
+                        let limpio = item.trim();
+                        if (limpio.includes(':')) {
+                            limpio = limpio.split(':')[0].trim();
+                        }
+                        if (limpio) conteo[limpio] = (conteo[limpio] || 0) + 1;
+                    });
+                }
+            });
+            return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, limite);
+        }
+
+        function renderCharts(encuesta, zonas, habilitaciones) {
+            // 1. Gráfico Zonas (Encuesta)
+            const topZonas = procesarFrecuencia(encuesta, '¿En qué barrios/localidades suelen estar las cafeterías que visitás?');
+            new Chart(document.getElementById('chartZonas'), {
+                type: 'doughnut',
+                data: {
+                    labels: topZonas.map(i => i[0]),
+                    datasets: [{
+                        data: topZonas.map(i => i[1]),
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 2. Gráfico Rubros Predominantes (Pestaña Zonas)
+            const conteoRubros = {};
+            zonas.forEach(row => {
+                let rubro = row['RUBRO_PREDOMINANTE'];
+                if (rubro) {
+                    conteoRubros[rubro] = (conteoRubros[rubro] || 0) + 1;
+                }
+            });
+            const topRubros = Object.entries(conteoRubros).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            new Chart(document.getElementById('chartRubrosZonas'), {
+                type: 'bar',
+                data: {
+                    labels: topRubros.map(i => i[0]),
+                    datasets: [{
+                        label: 'Cantidad de Zonas',
+                        data: topRubros.map(i => i[1]),
+                        backgroundColor: palette.primary,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 3. Residencia vs Consumo (Encuesta)
+            const residencia = procesarFrecuencia(encuesta, 'Lugar de residencia');
+            new Chart(document.getElementById('chartResidenciaConsumo'), {
+                type: 'bar',
+                data: {
+                    labels: residencia.map(i => i[0]),
+                    datasets: [{
+                        label: 'Usuarios Residentes',
+                        data: residencia.map(i => i[1]),
+                        backgroundColor: palette.accent,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 4. Corredor Norte vs Sur (Encuesta)
+            let norte = 0;
+            let surCentro = 0;
+            encuesta.forEach(row => {
+                let barrios = row['¿En qué barrios/localidades suelen estar las cafeterías que visitás?'] || '';
+                if (barrios.includes('Palermo') || barrios.includes('Belgrano') || barrios.includes('Recoleta') || barrios.includes('Núñez')) {
+                    norte++;
+                } else {
+                    surCentro++;
+                }
+            });
+
+            new Chart(document.getElementById('chartCorredores'), {
+                type: 'bar',
+                data: {
+                    labels: ['Corredor Norte', 'Corredor Sur / Centro y Otros'],
+                    datasets: [{
+                        label: 'Preferencia de Consumo',
+                        data: [norte, surCentro],
+                        backgroundColor: [palette.primary, palette.light],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 5. Redes Sociales (Encuesta)
+            const topRedes = procesarFrecuencia(encuesta, '¿Cómo llegás o descubrís esas cafeterías?');
+            new Chart(document.getElementById('chartRedes'), {
+                type: 'polarArea',
+                data: {
+                    labels: topRedes.map(i => i[0]),
+                    datasets: [{
+                        data: topRedes.map(i => i[1]),
+                        backgroundColor: [
+                            'rgba(74,44,42,0.85)',
+                            'rgba(192,125,88,0.85)',
+                            'rgba(140,90,71,0.85)',
+                            'rgba(217,179,157,0.85)',
+                            'rgba(168,159,145,0.85)'
+                        ]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
