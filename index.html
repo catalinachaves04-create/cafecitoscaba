@@ -56,13 +56,13 @@
             <canvas id="chartFrecuenciaIngresos"></canvas>
         </div>
 
-        <h2>Nuevo Gráfico: Origen de residentes que consumen en las Top 3 Comunas</h2>
-        <p style="font-size: 13px; color: #666;">Analiza si las personas consumen en su propia comuna (cercanía) o si se movilizan desde otros lugares.</p>
+        <h2>5. Origen de residentes que consumen en las Top 3 Comunas (Cercanía vs. Movilidad)</h2>
+        <p style="font-size: 13px; color: #666;">Muestra la distribución de dónde residen las personas que eligen consumir en las tres comunas con mayor demanda.</p>
         <div class="chart-container">
             <canvas id="chartMovilidadTop3"></canvas>
         </div>
 
-        <h2>5. Descubrimiento</h2>
+        <h2>6. Descubrimiento</h2>
         <div class="chart-container">
             <canvas id="chartDescubrimiento"></canvas>
         </div>
@@ -148,7 +148,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 4. Gráfico 4: Frecuencia de visita vs Ingresos (Gráfico de barras agrupadas o apiladas)
+            // 4. Gráfico 4: Frecuencia de visita vs Ingresos
             let freqIngresos = {};
             let setFreq = new Set();
             let setIngresos = new Set();
@@ -172,14 +172,12 @@
                 arrIngresos = ['$600.000 - $1.000.000', '$1.000.000 - $1.500.000'];
             }
 
-            let datasetsFreq = arrIngresos.map((ing, idx) => {
-                let colores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6'];
-                return {
-                    label: ing,
-                    data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
-                    backgroundColor: colores[idx % colores.length]
-                };
-            });
+            let paletaColores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
+            let datasetsFreq = arrIngresos.map((ing, idx) => ({
+                label: ing,
+                data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
+                backgroundColor: paletaColores[idx % paletaColores.length]
+            }));
 
             const ctxFreq = document.getElementById('chartFrecuenciaIngresos').getContext('2d');
             if (charts['chartFrecuenciaIngresos']) charts['chartFrecuenciaIngresos'].destroy();
@@ -189,7 +187,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // NUEVO GRÁFICO: Top 3 Comunas de consumo y origen de sus residentes (Cercanía vs Movilidad)
+            // 5. Gráfico 5: Movilidad Top 3 Comunas con colores diferenciados por cada comuna de residencia
             let top3Comunas = Object.keys(consumidoresComuna)
                 .sort((a, b) => consumidoresComuna[b] - consumidoresComuna[a])
                 .slice(0, 3);
@@ -209,27 +207,28 @@
                 });
             });
 
-            // Tomamos los residentes más frecuentes que visitan esas top 3 comunas
-            let allResidentOrigins = [...new Set(data.map(r => r['Lugar de residencia'] ? r['Lugar de residencia'].split(':')[0].trim() : null).filter(Boolean))];
-            
-            let datasetsMovilidad = allResidentOrigins.map((origen, idx) => {
-                let coloresMov = ['#1abc9c', '#e67e22', '#34495e', '#d35400', '#2980b9'];
-                return {
-                    label: `Residen en ${origen}`,
-                    data: top3Comunas.map(cTop => origenPorTop3[cTop][origen] || 0),
-                    backgroundColor: coloresMov[idx % coloresMov.length]
-                };
-            });
+            let allResidentOrigins = [...new Set(data.map(r => r['Lugar de residencia'] ? r['Lugar de residencia'].split(':')[0].trim() : null).filter(Boolean))].sort();
+            if (allResidentOrigins.length === 0) allResidentOrigins = ['Comuna 2', 'Comuna 6', 'Comuna 13', 'Comuna 14'];
+
+            let datasetsMovilidad = allResidentOrigins.map((origen, idx) => ({
+                label: `Residen en ${origen}`,
+                data: top3Comunas.map(cTop => origenPorTop3[cTop][origen] || 0),
+                backgroundColor: paletaColores[idx % paletaColores.length] // Asigna un color único y distinto a cada comuna de origen
+            }));
 
             const ctxMov = document.getElementById('chartMovilidadTop3').getContext('2d');
             if (charts['chartMovilidadTop3']) charts['chartMovilidadTop3'].destroy();
             charts['chartMovilidadTop3'] = new Chart(ctxMov, {
                 type: 'bar',
                 data: { labels: top3Comunas, datasets: datasetsMovilidad },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { x: { stacked: true }, y: { stacked: true } } 
+                }
             });
 
-            // 5. Gráfico de Descubrimiento
+            // 6. Gráfico 6: Descubrimiento
             let canalesCount = {};
             data.forEach(row => {
                 let canal = row['¿Cómo llegás o descubrís esas cafeterías?'];
