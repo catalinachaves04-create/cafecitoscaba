@@ -105,7 +105,7 @@
             } catch (error) {
                 console.error(error);
                 statusEl.style.color = '#c0392b';
-                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Verificá la ejecución desde un entorno web o GitHub Pages.';
+                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Si abrís el archivo localmente, probá ejecutándolo mediante un servidor local (ej. Live Server en VS Code).';
             }
         }
 
@@ -167,10 +167,10 @@
             new Chart(document.getElementById('chartHabilitacionesComunas'), {
                 type: 'bar',
                 data: {
-                    labels: sorted.length ? sorted.map(i => i[0]) : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
+                    labels: sorted.map(i => i[0]),
                     datasets: [{
                         label: 'Cantidad de Habilitaciones',
-                        data: sorted.length ? sorted.map(i => i[1]) : [45, 52, 60],
+                        data: sorted.map(i => i[1]),
                         backgroundColor: palette.primary,
                         borderRadius: 4
                     }]
@@ -180,7 +180,7 @@
                     maintainAspectRatio: false, 
                     plugins: { 
                         legend: { position: 'bottom' },
-                        title: { display: true, text: `Desglose de Habilitaciones (Total Periodo: ${totalPeriodo})` }
+                        title: { display: true, text: `Desglose por Zona (Total Periodo: ${totalPeriodo})` }
                     } 
                 }
             });
@@ -194,9 +194,9 @@
             new Chart(document.getElementById('chartCanalesDescubrimiento'), {
                 type: 'doughnut',
                 data: {
-                    labels: conteo.length ? conteo.map(i => i[0]) : ['Instagram', 'TikTok', 'Recomendación', 'Google Maps', 'Otros'],
+                    labels: conteo.map(i => i[0]),
                     datasets: [{
-                        data: conteo.length ? conteo.map(i => i[1]) : [50, 25, 15, 10, 5],
+                        data: conteo.map(i => i[1]),
                         backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
                     }]
                 },
@@ -227,10 +227,10 @@
             new Chart(document.getElementById('chartCorredoresPorcentaje'), {
                 type: 'bar',
                 data: {
-                    labels: labelsZonas.length ? labelsZonas : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
+                    labels: labelsZonas,
                     datasets: [{
                         label: 'Participación en el Consumo Total (%)',
-                        data: valoresPorcentuales.length ? valoresPorcentuales : [10, 25, 30],
+                        data: valoresPorcentuales,
                         backgroundColor: palette.accent,
                         borderRadius: 4
                     }]
@@ -266,7 +266,6 @@
             const comunasResidencia = {};
             const comunasConsumo = {};
 
-            // Recorrido independiente para acumular residencia por un lado y consumo por el otro
             dataEncuesta.forEach(row => {
                 let res = normalizarComuna(row[propReside]);
                 let con = normalizarComuna(row[propConsume]);
@@ -293,7 +292,7 @@
             new Chart(document.getElementById('chartMatrizResidenciaConsumo'), {
                 type: 'bar',
                 data: {
-                    labels: todasLasComunas.length ? todasLasComunas : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
+                    labels: todasLasComunas,
                     datasets: [
                         {
                             label: 'Personas que Residen en la Comuna',
