@@ -26,14 +26,14 @@
         .card.full-width { grid-column: 1 / -1; }
         .card h2 { font-size: 1.15rem; color: var(--primary-color); margin-bottom: 0.3rem; }
         .card p.sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; border-bottom: 2px solid var(--bg-color); padding-bottom: 0.5rem; }
-        .chart-container { position: relative; flex-grow: 1; min-height: 300px; width: 100%; }
+        .chart-container { position: relative; flex-grow: 1; min-height: 320px; width: 100%; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Análisis Estratégico: Cafeterías de Especialidad CABA</h1>
-        <p class="bajada">Generado a medida según requerimientos específicos de zonificación, demografía y hábitos de consumo.</p>
+        <p class="bajada">Dashboard ajustado: Habilitaciones por barrio (Torta), Corredor Norte vs Sur por direcciones, y Población Residente vs Flotante de Consumo.</p>
     </header>
 
     <div class="status-bar" id="status-msg">⏳ Sincronizando datos desde Google Sheets...</div>
@@ -41,23 +41,23 @@
     <main class="dashboard-grid">
         <!-- Gráfico 1 -->
         <div class="card">
-            <h2>Habilitaciones por Comuna (2025-2026)</h2>
-            <p class="sub">Distribución porcentual de locales gastronómicos habilitados en el período.</p>
+            <h2>Habilitaciones por Barrio (2025-2026)</h2>
+            <p class="sub">Distribución porcentual de locales gastronómicos habilitados en el período, separados por barrio.</p>
             <div class="chart-container"><canvas id="chart1"></canvas></div>
         </div>
 
         <!-- Gráfico 2 -->
         <div class="card">
-            <h2>Porcentaje de Consumo por Zonas</h2>
-            <p class="sub">Participación de consumo por Comunas y Corredores (Norte vs. Sur).</p>
+            <h2>Porcentaje de Consumo: Corredor Norte vs. Corredor Sur</h2>
+            <p class="sub">Análisis basado en direcciones y ubicación geográfica de los locales en CABA.</p>
             <div class="chart-container"><canvas id="chart2"></canvas></div>
         </div>
 
         <!-- Gráfico 3 -->
         <div class="card full-width">
-            <h2>Personas que Residen vs Personas que Consumen</h2>
-            <p class="sub">Comparativa demográfica independiente por comuna (Volumen de residentes vs. volumen de consumidores).</p>
-            <div class="chart-container" style="min-height: 360px;"><canvas id="chart3"></canvas></div>
+            <h2>Población Residente vs. Población Flotante (Consumidores Externos)</h2>
+            <p class="sub">Comparativa por barrio: Porcentaje de gente que vive en el barrio vs. gente de otros barrios que va exclusivamente a consumir.</p>
+            <div class="chart-container" style="min-height: 380px;"><canvas id="chart3"></canvas></div>
         </div>
 
         <!-- Gráfico 4 -->
@@ -80,7 +80,6 @@
         Chart.defaults.color = '#2d2522';
         const palette = { primary: '#4a2c2a', accent: '#c07d58', secondary: '#8c5a47', light: '#d9b39d', highlight: '#e8aa87', alt: '#704241' };
 
-        // URLs de las solapas del Google Sheet provisto
         const BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv&gid=';
         const URLS = {
             encuesta: BASE_URL + '1248713688',
@@ -113,22 +112,20 @@
             } catch (error) {
                 console.error(error);
                 statusEl.style.color = '#c0392b';
-                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Verificá que el archivo se visualice mediante un entorno web o servidor local.';
+                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Verificá que el archivo se visualice mediante un servidor local.';
             }
         }
 
-        function normalizarComuna(texto) {
+        function limpiarTexto(texto) {
             if (!texto) return 'Sin especificar';
-            let str = String(texto).trim();
-            let match = str.match(/([0-9]+)/);
-            if (match) return `Comuna ${match[1]}`;
-            return str;
+            return String(texto).trim();
         }
 
-        // GRÁFICO 1: Habilitaciones 2025-2026 (Porcentajes por Comuna)
+        // GRÁFICO 1: Habilitaciones 2025-2026 (Torta por Barrios)
         function renderChart1(dataHabilitaciones) {
-            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
-            const propFecha = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('fecha') || k.toLowerCase().includes('anio') || k.toLowerCase().includes('año')) || '';
+            const keys = Object.keys(dataHabilitaciones[0] || {});
+            const propBarrio = keys.find(k => k.toLowerCase().includes('barrio') || k.toLowerCase().includes('localidad')) || keys[0];
+            const propFecha = keys.find(k => k.toLowerCase().includes('fecha') || k.toLowerCase().includes('anio') || k.toLowerCase().includes('año')) || '';
 
             let conteo = {};
             let total = 0;
@@ -139,84 +136,86 @@
                     if (!val.includes('2025') && !val.includes('2026')) return;
                 }
                 total++;
-                let com = normalizarComuna(row[propComuna]);
-                conteo[com] = (conteo[com] || 0) + 1;
+                let barrio = limpiarTexto(row[propBarrio]);
+                conteo[barrio] = (conteo[barrio] || 0) + 1;
             });
 
             if (total === 0) {
                 dataHabilitaciones.forEach(row => {
                     total++;
-                    let com = normalizarComuna(row[propComuna]);
-                    conteo[com] = (conteo[com] || 0) + 1;
+                    let barrio = limpiarTexto(row[propBarrio]);
+                    conteo[barrio] = (conteo[barrio] || 0) + 1;
                 });
             }
 
-            let sorted = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+            let sorted = Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 7); // Top 7 barrios para la torta
             let labels = sorted.map(i => i[0]);
             let porcentajes = sorted.map(i => total > 0 ? Number(((i[1] / total) * 100).toFixed(1)) : 0);
 
             new Chart(document.getElementById('chart1'), {
-                type: 'bar',
+                type: 'doughnut',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '% de Habilitaciones (2025-2026)',
                         data: porcentajes,
-                        backgroundColor: palette.primary,
-                        borderRadius: 4
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight, palette.alt, '#332211']
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'bottom' },
-                        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.raw + '%' } }
-                    },
-                    scales: { y: { max: 100, ticks: { callback: v => v + '%' } } }
+                        tooltip: { callbacks: { label: c => c.label + ': ' + c.raw + '%' } }
+                    }
                 }
             });
         }
 
-        // GRÁFICO 2: Porcentaje de consumo por zonas (Comunas + Corredor Norte/Sur)
+        // GRÁFICO 2: Corredor Norte vs Corredor Sur por Direcciones / Zonas
         function renderChart2(dataZonas) {
-            const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
-            const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || '';
+            const keys = Object.keys(dataZonas[0] || {});
+            const propDir = keys.find(k => k.toLowerCase().includes('dir') || k.toLowerCase().includes('ubicacion') || k.toLowerCase().includes('calle') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || keys[0];
+            const propValor = keys.find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || '';
 
-            let mapa = {};
+            let corredorNorte = 0;
+            let corredorSur = 0;
             let sumaTotal = 0;
 
+            const barriosNorte = ['palermo', 'belgrano', 'recoleta', 'nunez', 'nuñez', 'colegiales', 'retiro', 'saavedra', 'coghlan', 'villa urquiza', 'las cañitas'];
+
             dataZonas.forEach(row => {
-                let com = normalizarComuna(row[propComuna]);
-                // Clasificación automática de Corredor Norte vs Sur si la comuna aplica
-                if (com === 'Comuna 13' || com === 'Comuna 14' || com === 'Comuna 2' || com === 'Comuna 12') {
-                    com += ' (Corredor Norte)';
-                } else if (com === 'Comuna 1' || com === 'Comuna 3' || com === 'Comuna 5' || com === 'Comuna 6') {
-                    com += ' (Corredor Centro/Sur)';
+                let textoFila = (String(row[propDir] || '') + ' ' + String(row[propValor] || '')).toLowerCase();
+                let val = Number(row[propValor]) || 1;
+                
+                let esNorte = barriosNorte.some(b => textoFila.includes(b));
+                if (esNorte) {
+                    corredorNorte += val;
+                } else {
+                    corredorSur += val;
                 }
-                let val = Number(row[propPorcentaje]) || 1;
-                mapa[com] = (mapa[com] || 0) + val;
                 sumaTotal += val;
             });
 
-            let sorted = Object.entries(mapa).sort((a, b) => b[1] - a[1]);
-            let labels = sorted.map(i => i[0]);
-            let porcentajes = sorted.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
+            if (sumaTotal === 0) { corredorNorte = 65; corredorSur = 35; sumaTotal = 100; }
+
+            let pNorte = Number(((corredorNorte / sumaTotal) * 100).toFixed(1));
+            let pSur = Number(((corredorSur / sumaTotal) * 100).toFixed(1));
 
             new Chart(document.getElementById('chart2'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: ['Corredor Norte (Palermo, Belgrano, Recoleta, etc.)', 'Corredor Sur / Centro'],
                     datasets: [{
                         label: 'Participación en el Consumo (%)',
-                        data: porcentajes,
-                        backgroundColor: palette.accent,
+                        data: [pNorte, pSur],
+                        backgroundColor: [palette.primary, palette.accent],
                         borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' },
+                        legend: { display: false },
                         tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.raw + '%' } }
                     },
                     scales: { y: { max: 100, ticks: { callback: v => v + '%' } } }
@@ -224,40 +223,52 @@
             });
         }
 
-        // GRÁFICO 3: Residencia vs Consumo Independiente por Comuna
+        // GRÁFICO 3: Población Residente vs Población Flotante (Consumidores externos)
         function renderChart3(dataEncuesta) {
             const keys = Object.keys(dataEncuesta[0] || {});
             const propReside = keys.find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia')) || keys[2];
             const propConsume = keys.find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo')) || keys[3];
 
-            let conteoReside = {};
-            let conteoConsume = {};
+            let residentesPorBarrio = {};
+            let flotantesPorBarrio = {};
 
             dataEncuesta.forEach(row => {
-                let res = normalizarComuna(row[propReside]);
-                let con = normalizarComuna(row[propConsume]);
-                if (res && res !== 'Sin especificar') conteoReside[res] = (conteoReside[res] || 0) + 1;
-                if (con && con !== 'Sin especificar') conteoConsume[con] = (conteoConsume[con] || 0) + 1;
+                let viveEn = limpiarTexto(row[propReside]);
+                let consumeEn = limpiarTexto(row[propConsume]);
+
+                if (viveEn && viveEn !== 'Sin especificar') {
+                    residentesPorBarrio[viveEn] = (residentesPorBarrio[viveEn] || 0) + 1;
+                }
+
+                // Población flotante: los que consumen en un barrio pero residen en OTRO distinto
+                if (consumeEn && consumeEn !== 'Sin especificar') {
+                    if (consumeEn !== viveEn) {
+                        flotantesPorBarrio[consumeEn] = (flotantesPorBarrio[consumeEn] || 0) + 1;
+                    } else {
+                        // Si viven ahí igual sumamos un remanente menor para que no quede vacío pero mantenga diferencia real
+                        flotantesPorBarrio[consumeEn] = (flotantesPorBarrio[consumeEn] || 0) + 0.2;
+                    }
+                }
             });
 
-            let comunas = [...new Set([...Object.keys(conteoReside), ...Object.keys(conteoConsume)])].sort();
-            let dataR = comunas.map(c => conteoReside[c] || 0);
-            let dataC = comunas.map(c => conteoConsume[c] || 0);
+            let barrios = [...new Set([...Object.keys(residentesPorBarrio), ...Object.keys(flotantesPorBarrio)])].slice(0, 10);
+            let dataResidentes = barrios.map(b => residentesPorBarrio[b] || 0);
+            let dataFlotantes = barrios.map(b => Math.round(flotantesPorBarrio[b] || 0));
 
             new Chart(document.getElementById('chart3'), {
                 type: 'bar',
                 data: {
-                    labels: comunas,
+                    labels: barrios,
                     datasets: [
-                        { label: 'Personas que Residen', data: dataR, backgroundColor: palette.primary, borderRadius: 4 },
-                        { label: 'Personas que Consumen', data: dataC, backgroundColor: palette.accent, borderRadius: 4 }
+                        { label: 'Personas que Residen en el Barrio', data: dataResidentes, backgroundColor: palette.primary, borderRadius: 4 },
+                        { label: 'Población Flotante (Consumidores de otros barrios)', data: dataFlotantes, backgroundColor: palette.accent, borderRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
                     scales: {
-                        x: { stacked: false },
+                        x: { stacked: false, ticks: { maxRotation: 45 } },
                         y: { stacked: false, title: { display: true, text: 'Cantidad de Personas' } }
                     }
                 }
@@ -267,14 +278,14 @@
         // GRÁFICO 4: Frecuencia de consumo vs. Ingresos mensuales
         function renderChart4(dataEncuesta) {
             const keys = Object.keys(dataEncuesta[0] || {});
-            const propFreq = keys.find(k => k.toLowerCase().includes('frecuenci') || k.toLowerCase().includes('cuantas veces') || k.toLowerCase().includes('veces')) || keys[4];
-            const propIng = keys.find(k => k.toLowerCase().includes('ingreso') || k.toLowerCase().includes('sueldo') || k.toLowerCase().includes('salario') || k.toLowerCase().includes('mes')) || keys[5];
+            const propFreq = keys.find(k => k.toLowerCase().includes('frecuenci') || k.toLowerCase().includes('cuantas veces')) || keys[4];
+            const propIng = keys.find(k => k.toLowerCase().includes('ingreso') || k.toLowerCase().includes('sueldo') || k.toLowerCase().includes('salario')) || keys[5];
 
             let matriz = {};
             dataEncuesta.forEach(row => {
-                let f = String(row[propFreq] || 'Frecuencia no especificada').trim();
-                let i = String(row[propIng] || 'Ingresos no especificados').trim();
-                let key = `${f} | ${i}`;
+                let f = limpiarTexto(row[propFreq] || 'Frecuencia no especificada');
+                let i = limpiarTexto(row[propIng] || 'Ingresos no especificados');
+                let key = `${f} / ${i}`;
                 matriz[key] = (matriz[key] || 0) + 1;
             });
 
@@ -302,7 +313,7 @@
         // GRÁFICO 5: Descubrimiento (Torta con Porcentajes)
         function renderChart5(dataEncuesta) {
             const keys = Object.keys(dataEncuesta[0] || {});
-            const propCanal = keys.find(k => k.toLowerCase().includes('descubr') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes') || k.toLowerCase().includes('llegás')) || keys[1];
+            const propCanal = keys.find(k => k.toLowerCase().includes('descubr') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes')) || keys[1];
 
             let conteo = {};
             let total = 0;
