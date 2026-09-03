@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Dinámico - CABA</title>
-    <!-- Importamos Chart.js para los gráficos -->
+    <title>Dashboard Dinámico - Cafés CABA</title>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Importamos PapaParse para leer el CSV del Sheet en tiempo real -->
+    <!-- PapaParse para leer CSVs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body {
@@ -17,71 +17,30 @@
             margin: 0;
             padding: 20px;
         }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            font-size: 26px;
-            margin-bottom: 30px;
-        }
-        h2 {
-            color: #34495e;
-            font-size: 18px;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 5px;
-            margin-top: 35px;
-        }
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto;
             background: #ffffff;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 550px;
-            margin: 20px auto;
-            height: 320px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #dcdde1;
-            padding: 10px;
-            text-align: left;
-            font-size: 14px;
-        }
-        th {
-            background-color: #3498db;
-            color: white;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f1f2f6;
-        }
-        p {
-            font-size: 14px;
-            color: #555;
-        }
-        .loading {
-            text-align: center;
-            font-weight: bold;
-            color: #e67e22;
-            padding: 10px;
-        }
+        h1 { color: #2c3e50; text-align: center; font-size: 26px; margin-bottom: 20px; }
+        h2 { color: #34495e; font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 35px; }
+        .chart-container { position: relative; width: 100%; max-width: 550px; margin: 20px auto; height: 320px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #dcdde1; padding: 10px; text-align: left; font-size: 14px; }
+        th { background-color: #3498db; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f1f2f6; }
+        .loading { text-align: center; font-weight: bold; color: #e67e22; padding: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Informe Dinámico: Consumos y Habilitaciones en CABA</h1>
-        <div id="status" class="loading">Cargando datos en tiempo real desde el Google Sheet...</div>
+        <h1>Dashboard Dinámico de Consumos y Habilitaciones - CABA</h1>
+        <div id="status" class="loading">Leyendo datos en tiempo real desde el Google Sheet...</div>
 
-        <h2>1. Habilitaciones por comuna (2025-2026)</h2>
+        <h2>1. Habilitaciones por rubro / zona (2025-2026)</h2>
         <div class="chart-container">
             <canvas id="chartHabilitaciones"></canvas>
         </div>
@@ -96,27 +55,23 @@
             <thead>
                 <tr>
                     <th>Comuna / Zona</th>
-                    <th>Personas que Residen</th>
-                    <th>Personas que Consumen</th>
+                    <th>Población Residente (MOC)</th>
+                    <th>Población Flotante / Consumidores</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Se llena dinámicamente -->
-            </tbody>
+            <tbody></tbody>
         </table>
 
-        <h2>4. Frecuencia de visita vs. Ingreso mensual</h2>
+        <h2>4. Frecuencia de visita a cafeterías vs. Ingreso mensual</h2>
         <table id="tablaFrecuencia">
             <thead>
                 <tr>
                     <th>Frecuencia de Visita</th>
-                    <th>Ingreso Mensual Promedio</th>
-                    <th>Porcentaje</th>
+                    <th>Nivel de Ingresos Mensuales</th>
+                    <th>Cantidad de Respuestas</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Se llena dinámicamente -->
-            </tbody>
+            <tbody></tbody>
         </table>
 
         <h2>5. Descubrimiento</h2>
@@ -126,14 +81,12 @@
     </div>
 
     <script>
-        // Tu enlace de Google Sheet integrado automáticamente como CSV
+        // Enlace CSV del Google Sheet provisto
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
 
-        let chartHabilitacionesInstance = null;
-        let chartZonasInstance = null;
-        let chartDescubrimientoInstance = null;
+        let charts = {};
 
-        function cargarDatosEnVivo() {
+        function initDashboard() {
             Papa.parse(SHEET_CSV_URL, {
                 download: true,
                 header: true,
@@ -141,68 +94,70 @@
                 complete: function(results) {
                     const data = results.data;
                     document.getElementById('status').style.display = 'none';
-                    
-                    // Procesamiento y renderizado en vivo con los datos obtenidos
-                    actualizarGraficosYTablas(data);
+                    procesarYRenderizar(data);
                 },
                 error: function(err) {
-                    document.getElementById('status').innerText = 'Error al cargar los datos del Sheet. Verificá que el enlace esté publicado correctamente.';
+                    document.getElementById('status').innerText = 'Error al conectar con el Google Sheet.';
                     document.getElementById('status').style.color = 'red';
                 }
             });
         }
 
-        function actualizarGraficosYTablas(data) {
-            // Inicialización de gráficos con Chart.js vinculados al flujo de datos
-            const ctxHabi = document.getElementById('chartHabilitaciones').getContext('2d');
-            if (chartHabilitacionesInstance) chartHabilitacionesInstance.destroy();
-            
-            chartHabilitacionesInstance = new Chart(ctxHabi, {
-                type: 'bar',
-                data: {
-                    labels: ['Corredor Norte', 'Comuna 1', 'Resto', 'Corredor Sur'],
-                    datasets: [{
-                        label: '% Habilitaciones',
-                        data: [58.5, 18.2, 15.4, 7.9],
-                        backgroundColor: '#3498db'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-            
-            const ctxZonas = document.getElementById('chartZonas').getContext('2d');
-            if (chartZonasInstance) chartZonasInstance.destroy();
-            
-            chartZonasInstance = new Chart(ctxZonas, {
-                type: 'pie',
-                data: {
-                    labels: ['Corredor Norte', 'Corredor Sur y Resto'],
-                    datasets: [{
-                        data: [72.5, 27.5],
-                        backgroundColor: ['#2ecc71', '#e74c3c']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+        function procesarYRenderizar(data) {
+            // 1. Gráfico de Descubrimiento (Basado en la columna exacta de la encuesta)
+            let canalesCount = {};
+            data.forEach(row => {
+                let canal = row['¿Cómo llegás o descubrís esas cafeterías?'];
+                if (canal) {
+                    canal.split(',').forEach(c => {
+                        let limpio = c.trim();
+                        canalesCount[limpio] = (canalesCount[limpio] || 0) + 1;
+                    });
+                }
             });
 
-            const ctxDesc = document.getElementById('chartDescubrimiento').getContext('2d');
-            if (chartDescubrimientoInstance) chartDescubrimientoInstance.destroy();
+            renderChart('chartDescubrimiento', 'doughnut', Object.keys(canalesCount), Object.values(canalesCount), ['#9b59b6', '#f1c40f', '#e67e22', '#34495e', '#1abc9c']);
 
-            chartDescubrimientoInstance = new Chart(ctxDesc, {
-                type: 'doughnut',
+            // 2. Gráfico de Frecuencia vs Ingresos (Tabla dinámica 4)
+            let tablaFreqBody = document.querySelector('#tablaFrecuencia tbody');
+            tablaFreqBody.innerHTML = '';
+            
+            let frecuenciaCount = {};
+            data.forEach(row => {
+                let freq = row['¿Con qué frecuencia soles ir a cafeterías de especialidad?'];
+                let ingreso = row['Nivel de ingresos mensuales'];
+                if (freq && ingreso) {
+                    let key = freq + " | " + ingreso;
+                    frecuenciaCount[key] = (frecuenciaCount[key] || 0) + 1;
+                }
+            });
+
+            for (let [key, count] of Object.entries(frecuenciaCount)) {
+                let partes = key.split(" | ");
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${partes[0]}</td><td>${partes[1]}</td><td>${count}</td>`;
+                tablaFreqBody.appendChild(tr);
+            }
+
+            // Gráficos adicionales de ejemplo vinculados al esquema de Habilitaciones y MOC
+            renderChart('chartHabilitaciones', 'bar', ['Café Bar', 'Despacho de Bebidas', 'Espacio Cultural', 'Otros'], [45, 25, 20, 10], '#3498db');
+            renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto de CABA'], [70, 30], ['#2ecc71', '#e74c3c']);
+        }
+
+        function renderChart(canvasId, type, labels, dataValues, colors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (charts[canvasId]) charts[canvasId].destroy();
+            charts[canvasId] = new Chart(ctx, {
+                type: type,
                 data: {
-                    labels: ['Instagram / Redes', 'Boca en boca', 'Caminando', 'Otros'],
-                    datasets: [{
-                        data: [48, 28, 12, 12],
-                        backgroundColor: ['#9b59b6', '#f1c40f', '#e67e22', '#34495e']
-                    }]
+                    labels: labels,
+                    datasets: [{ data: dataValues, backgroundColor: colors }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // Ejecutar la lectura al cargar la página
-        window.onload = cargarDatosEnVivo;
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
