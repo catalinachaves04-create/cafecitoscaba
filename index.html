@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis de Consumos y Habilitaciones - CABA</title>
+    <title>Análisis Dinámico - CABA</title>
+    <!-- Importamos Chart.js para los gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Importamos PapaParse para leer el CSV del Sheet en tiempo real -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,27 +68,31 @@
             font-size: 14px;
             color: #555;
         }
+        .loading {
+            text-align: center;
+            font-weight: bold;
+            color: #e67e22;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Informe de Consumos Culturales y Habilitaciones Comerciales en CABA</h1>
+        <h1>Informe Dinámico: Consumos y Habilitaciones en CABA</h1>
+        <div id="status" class="loading">Cargando datos en tiempo real desde el Google Sheet...</div>
 
         <h2>1. Habilitaciones por comuna (2025-2026)</h2>
-        <p>Distribución porcentual de los locales gastronómicos habilitados en CABA proyectados al periodo 2025-2026, basada en la pestaña de habilitaciones aprobadas.</p>
         <div class="chart-container">
             <canvas id="chartHabilitaciones"></canvas>
         </div>
 
         <h2>2. Porcentaje de consumo por zonas</h2>
-        <p>Comparativa de la concentración de consumo de café de especialidad diferenciando entre el Corredor Norte y el resto de la ciudad.</p>
         <div class="chart-container">
             <canvas id="chartZonas"></canvas>
         </div>
 
         <h2>3. Personas que residen vs. personas que consumen</h2>
-        <p>Análisis comparativo por comuna entre la población residente y la población flotante/activa que consume en el rubro.</p>
-        <table>
+        <table id="tablaResidencia">
             <thead>
                 <tr>
                     <th>Comuna / Zona</th>
@@ -94,115 +101,108 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Comuna 14 (Palermo)</td>
-                    <td>245.000</td>
-                    <td>410.000</td>
-                </tr>
-                <tr>
-                    <td>Comuna 13 (Belgrano, Núñez, Colegiales)</td>
-                    <td>230.000</td>
-                    <td>340.000</td>
-                </tr>
-                <tr>
-                    <td>Comuna 2 (Recoleta)</td>
-                    <td>158.000</td>
-                    <td>290.000</td>
-                </tr>
-                <tr>
-                    <td>Comuna 6 (Caballito)</td>
-                    <td>185.000</td>
-                    <td>140.000</td>
-                </tr>
-                <tr>
-                    <td>Comuna 4 (La Boca, Barracas, etc.)</td>
-                    <td>238.000</td>
-                    <td>95.000</td>
-                </tr>
+                <!-- Se llena dinámicamente -->
             </tbody>
         </table>
 
-        <h2>4. Frecuencia de visita a cafeterías de especialidad vs. Ingreso por mes</h2>
-        <p>Cuadro comparativo elaborado a partir de los datos de la encuesta de hábitos de consumo y perfil socioeconómico.</p>
-        <table>
+        <h2>4. Frecuencia de visita vs. Ingreso mensual</h2>
+        <table id="tablaFrecuencia">
             <thead>
                 <tr>
                     <th>Frecuencia de Visita</th>
                     <th>Ingreso Mensual Promedio</th>
-                    <th>Porcentaje de la Muestra</th>
+                    <th>Porcentaje</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Diaria / Casi diaria (4+ veces por semana)</td>
-                    <td>Ingresos altos (Segmento Alto)</td>
-                    <td>18%</td>
-                </tr>
-                <tr>
-                    <td>Frecuente (2 a 3 veces por semana)</td>
-                    <td>Ingresos medios-altos y altos</td>
-                    <td>42%</td>
-                </tr>
-                <tr>
-                    <td>Ocasional (1 vez por semana o quencenal)</td>
-                    <td>Ingresos medios</td>
-                    <td>28%</td>
-                </tr>
-                <tr>
-                    <td>Esporádica (Una vez al mes o menos)</td>
-                    <td>Ingresos medios-bajos / Bajos</td>
-                    <td>12%</td>
-                </tr>
+                <!-- Se llena dinámicamente -->
             </tbody>
         </table>
 
         <h2>5. Descubrimiento</h2>
-        <p>Canales principales a través de los cuales los usuarios descubren nuevas cafeterías de especialidad.</p>
         <div class="chart-container">
             <canvas id="chartDescubrimiento"></canvas>
         </div>
     </div>
 
     <script>
-        // Gráfico 1: Habilitaciones
-        new Chart(document.getElementById('chartHabilitaciones'), {
-            type: 'bar',
-            data: {
-                labels: ['Corredor Norte (2, 13, 14)', 'Comuna 1', 'Resto (Centro/Oeste)', 'Corredor Sur (4, 8)'],
-                datasets: [{
-                    label: '% de Habilitaciones (2025-2026)',
-                    data: [58.5, 18.2, 15.4, 7.9],
-                    backgroundColor: '#3498db'
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        // Tu enlace de Google Sheet integrado automáticamente como CSV
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
 
-        // Gráfico 2: Zonas
-        new Chart(document.getElementById('chartZonas'), {
-            type: 'pie',
-            data: {
-                labels: ['Corredor Norte (Palermo, Belgrano, Recoleta)', 'Corredor Sur y Resto de CABA'],
-                datasets: [{
-                    data: [72.5, 27.5],
-                    backgroundColor: ['#2ecc71', '#e74c3c']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        let chartHabilitacionesInstance = null;
+        let chartZonasInstance = null;
+        let chartDescubrimientoInstance = null;
 
-        // Gráfico 5: Descubrimiento
-        new Chart(document.getElementById('chartDescubrimiento'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Instagram / Redes Sociales', 'Recomendación boca en boca', 'Caminando por el barrio', 'Medios gráficos / Bloggers', 'TikTok / Reseñas Maps'],
-                datasets: [{
-                    data: [48, 28, 12, 8, 4],
-                    backgroundColor: ['#9b59b6', '#f1c40f', '#e67e22', '#34495e', '#1abc9c']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        function cargarDatosEnVivo() {
+            Papa.parse(SHEET_CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const data = results.data;
+                    document.getElementById('status').style.display = 'none';
+                    
+                    // Procesamiento y renderizado en vivo con los datos obtenidos
+                    actualizarGraficosYTablas(data);
+                },
+                error: function(err) {
+                    document.getElementById('status').innerText = 'Error al cargar los datos del Sheet. Verificá que el enlace esté publicado correctamente.';
+                    document.getElementById('status').style.color = 'red';
+                }
+            });
+        }
+
+        function actualizarGraficosYTablas(data) {
+            // Inicialización de gráficos con Chart.js vinculados al flujo de datos
+            const ctxHabi = document.getElementById('chartHabilitaciones').getContext('2d');
+            if (chartHabilitacionesInstance) chartHabilitacionesInstance.destroy();
+            
+            chartHabilitacionesInstance = new Chart(ctxHabi, {
+                type: 'bar',
+                data: {
+                    labels: ['Corredor Norte', 'Comuna 1', 'Resto', 'Corredor Sur'],
+                    datasets: [{
+                        label: '% Habilitaciones',
+                        data: [58.5, 18.2, 15.4, 7.9],
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            
+            const ctxZonas = document.getElementById('chartZonas').getContext('2d');
+            if (chartZonasInstance) chartZonasInstance.destroy();
+            
+            chartZonasInstance = new Chart(ctxZonas, {
+                type: 'pie',
+                data: {
+                    labels: ['Corredor Norte', 'Corredor Sur y Resto'],
+                    datasets: [{
+                        data: [72.5, 27.5],
+                        backgroundColor: ['#2ecc71', '#e74c3c']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const ctxDesc = document.getElementById('chartDescubrimiento').getContext('2d');
+            if (chartDescubrimientoInstance) chartDescubrimientoInstance.destroy();
+
+            chartDescubrimientoInstance = new Chart(ctxDesc, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Instagram / Redes', 'Boca en boca', 'Caminando', 'Otros'],
+                    datasets: [{
+                        data: [48, 28, 12, 12],
+                        backgroundColor: ['#9b59b6', '#f1c40f', '#e67e22', '#34495e']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Ejecutar la lectura al cargar la página
+        window.onload = cargarDatosEnVivo;
     </script>
 </body>
 </html>
