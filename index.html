@@ -63,7 +63,7 @@
         <!-- 4. Matriz Comparativa Independiente: Residencia vs Consumo por Comuna -->
         <div class="card full-width">
             <h2>4. Comparativa Independiente por Comuna: Personas que Residen vs. Personas que Consumen</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Comparación demográfica pura: cuántos viven en la comuna vs. cuántos van a consumir a esa misma comuna)</p>
+            <p class="sub">Fuente: Solapa de Encuestas (Conteo totalmente independiente: volumen demográfico de residencia vs. volumen comercial de consumo)</p>
             <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
@@ -258,27 +258,31 @@
             });
         }
 
-        // 4. Comparativa Independiente: Personas que Residen vs Personas que Consumen por Comuna
+        // 4. Matriz Comparativa 100% Independiente: Residencia vs Consumo por Comuna
         function renderMatrizResidenciaConsumo(dataEncuesta) {
-            const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || 'Barrio';
-            const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || propReside;
+            // Buscamos explícitamente las columnas de residencia y de consumo en las encuestas
+            const keys = Object.keys(dataEncuesta[0] || {});
+            const propReside = keys.find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || keys[2];
+            const propConsume = keys.find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || keys[3];
 
-            const comunasResidencia = {};
-            const comunasConsumo = {};
+            const conteoResidencia = {};
+            const conteoConsumo = {};
 
+            // Conteo independiente absoluto por cada dimensión
             dataEncuesta.forEach(row => {
-                let res = normalizarComuna(row[propReside]);
-                let con = normalizarComuna(row[propConsume]);
-                
-                if (res !== 'Sin especificar') {
-                    comunasResidencia[res] = (comunasResidencia[res] || 0) + 1;
+                let comunaResidencia = normalizarComuna(row[propReside]);
+                let comunaConsumo = normalizarComuna(row[propConsume]);
+
+                if (comunaResidencia && comunaResidencia !== 'Sin especificar') {
+                    conteoResidencia[comunaResidencia] = (conteoResidencia[comunaResidencia] || 0) + 1;
                 }
-                if (con !== 'Sin especificar') {
-                    comunasConsumo[con] = (comunasConsumo[con] || 0) + 1;
+                if (comunaConsumo && comunaConsumo !== 'Sin especificar') {
+                    conteoConsumo[comunaConsumo] = (conteoConsumo[comunaConsumo] || 0) + 1;
                 }
             });
 
-            const todasLasComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])];
+            // Combinamos todas las comunas que salieron en cualquiera de los dos lados
+            const todasLasComunas = [...new Set([...Object.keys(conteoResidencia), ...Object.keys(conteoConsumo)])];
             
             todasLasComunas.sort((a, b) => {
                 let numA = parseInt(a.replace(/[^0-9]/g, '')) || 99;
@@ -286,8 +290,8 @@
                 return numA - numB;
             });
 
-            const dataResidentes = todasLasComunas.map(c => comunasResidencia[c] || 0);
-            const dataConsumidores = todasLasComunas.map(c => comunasConsumo[c] || 0);
+            const arrayResidentes = todasLasComunas.map(c => conteoResidencia[c] || 0);
+            const arrayConsumidores = todasLasComunas.map(c => conteoConsumo[c] || 0);
 
             new Chart(document.getElementById('chartMatrizResidenciaConsumo'), {
                 type: 'bar',
@@ -295,14 +299,14 @@
                     labels: todasLasComunas,
                     datasets: [
                         {
-                            label: 'Personas que Residen en la Comuna',
-                            data: dataResidentes,
+                            label: 'Total de Personas que Residen en la Comuna',
+                            data: arrayResidentes,
                             backgroundColor: palette.primary,
                             borderRadius: 4
                         },
                         {
-                            label: 'Personas que Consumen en la Comuna',
-                            data: dataConsumidores,
+                            label: 'Total de Personas que Consumen en la Comuna',
+                            data: arrayConsumidores,
                             backgroundColor: palette.accent,
                             borderRadius: 4
                         }
