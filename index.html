@@ -27,7 +27,7 @@
         }
         h1 { color: #2c3e50; text-align: center; font-size: 26px; margin-bottom: 20px; }
         h2 { color: #34495e; font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 35px; }
-        .chart-container { position: relative; width: 100%; max-width: 600px; margin: 20px auto; height: 350px; }
+        .chart-container { position: relative; width: 100%; max-width: 650px; margin: 20px auto; height: 350px; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { border: 1px solid #dcdde1; padding: 10px; text-align: left; font-size: 14px; }
         th { background-color: #3498db; color: white; font-weight: bold; }
@@ -50,17 +50,10 @@
             <canvas id="chartZonas"></canvas>
         </div>
 
-        <h2>3. Personas que residen vs. personas que consumen</h2>
-        <table id="tablaResidencia">
-            <thead>
-                <tr>
-                    <th>Comuna / Zona</th>
-                    <th>Personas que Residen (Encuesta)</th>
-                    <th>Personas que Consumen (Encuesta)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <h2>3. Personas que residen vs. personas que consumen por Comuna</h2>
+        <div class="chart-container">
+            <canvas id="chartResidenciaConsumo"></canvas>
+        </div>
 
         <h2>4. Frecuencia de visita a cafeterías vs. Ingreso mensual</h2>
         <table id="tablaFrecuencia">
@@ -107,9 +100,7 @@
             let habPorComuna = {};
             data.forEach(row => {
                 let rubro = row['DescripcionRubro'] ? row['DescripcionRubro'].toUpperCase() : '';
-                // Filtramos que sean rubros gastronómicos
                 if (rubro.includes('CAFÉ') || rubro.includes('RESTAURANTE') || rubro.includes('BEBIDAS') || rubro.includes('GASTRONOMIA') || rubro.includes('BAR')) {
-                    // Intentamos detectar la comuna o sección en el registro
                     let comuna = row['Seccion'] ? `Comuna ${row['Seccion']}` : (row['Comuna'] ? `Comuna ${row['Comuna']}` : 'Sin especificar');
                     habPorComuna[comuna] = (habPorComuna[comuna] || 0) + 1;
                 }
@@ -119,7 +110,7 @@
             let valuesHab = Object.keys(habPorComuna).length > 0 ? labelsHab.map(c => habPorComuna[c]) : [5, 12, 18, 25];
             renderChart('chartHabilitaciones', 'bar', labelsHab, valuesHab, '#3498db');
 
-            // 3. Gráfico / Tabla 3: Residencia vs Consumo basado en respuestas de encuesta
+            // 3. Gráfico 3: Residencia vs Consumo (Barras Agrupadas)
             let residentesComuna = {};
             let consumidoresComuna = {};
 
@@ -142,19 +133,28 @@
             });
 
             let todasComunas = [...new Set([...Object.keys(residentesComuna), ...Object.keys(consumidoresComuna)])].sort();
-            let tablaResBody = document.querySelector('#tablaResidencia tbody');
-            tablaResBody.innerHTML = '';
-
+            
             if (todasComunas.length === 0) {
                 todasComunas = ['Comuna 2', 'Comuna 6', 'Comuna 13', 'Comuna 14'];
                 residentesComuna = { 'Comuna 2': 12, 'Comuna 6': 25, 'Comuna 13': 18, 'Comuna 14': 30 };
                 consumidoresComuna = { 'Comuna 2': 28, 'Comuna 6': 42, 'Comuna 13': 35, 'Comuna 14': 55 };
             }
 
-            todasComunas.forEach(comuna => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${comuna}</td><td>${residentesComuna[comuna] || 0}</td><td>${consumidoresComuna[comuna] || 0}</td>`;
-                tablaResBody.appendChild(tr);
+            let datosResiden = todasComunas.map(c => residentesComuna[c] || 0);
+            let datosConsumen = todasComunas.map(c => consumidoresComuna[c] || 0);
+
+            const ctxResCons = document.getElementById('chartResidenciaConsumo').getContext('2d');
+            if (charts['chartResidenciaConsumo']) charts['chartResidenciaConsumo'].destroy();
+            charts['chartResidenciaConsumo'] = new Chart(ctxResCons, {
+                type: 'bar',
+                data: {
+                    labels: todasComunas,
+                    datasets: [
+                        { label: 'Personas que Residen', data: datosResiden, backgroundColor: '#3498db' },
+                        { label: 'Personas que Consumen', data: datosConsumen, backgroundColor: '#e74c3c' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
             });
 
             // 4. Tabla Frecuencia vs Ingresos
@@ -204,7 +204,7 @@
                 type: type,
                 data: {
                     labels: labels,
-                    datasets: [{ data: dataValues, backgroundColor: Array.isArray(colors) ? colors : colors }]
+                    datasets: [{ data: dataValues, backgroundColor: colors }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
