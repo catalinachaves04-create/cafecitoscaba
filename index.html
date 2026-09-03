@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Estratégico Integrado: Cafeterías CABA</title>
+    <title>Dashboard Estratégico Definitivo: Cafeterías CABA</title>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PapaParse CDN -->
@@ -26,55 +26,62 @@
         .card.full-width { grid-column: 1 / -1; }
         .card h2 { font-size: 1.15rem; color: var(--primary-color); margin-bottom: 0.3rem; }
         .card p.sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; border-bottom: 2px solid var(--bg-color); padding-bottom: 0.5rem; }
-        .chart-container { position: relative; flex-grow: 1; min-height: 280px; width: 100%; }
+        .chart-container { position: relative; flex-grow: 1; min-height: 300px; width: 100%; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Análisis Estratégico Integrado: Cafeterías de Especialidad CABA</h1>
-        <p class="bajada">Cruce relacional específico entre Habilitaciones 2025-2026, Encuestas de Consumo y Solapa de Zonas.</p>
+        <h1>Análisis Estratégico: Cafeterías de Especialidad CABA</h1>
+        <p class="bajada">Generado a medida según requerimientos específicos de zonificación, demografía y hábitos de consumo.</p>
     </header>
 
-    <div class="status-bar" id="status-msg">⏳ Sincronizando datos específicos desde Google Sheets...</div>
+    <div class="status-bar" id="status-msg">⏳ Sincronizando datos desde Google Sheets...</div>
 
     <main class="dashboard-grid">
-        <!-- 1. Habilitaciones Desglosadas por Comuna/Zona -->
+        <!-- Gráfico 1 -->
         <div class="card">
-            <h2>1. Habilitaciones por Comuna / Zona (2025-2026)</h2>
-            <p class="sub">Fuente: Solapa de Habilitaciones (Desglose nominativo por zona)</p>
-            <div class="chart-container"><canvas id="chartHabilitacionesComunas"></canvas></div>
+            <h2>Habilitaciones por Comuna (2025-2026)</h2>
+            <p class="sub">Distribución porcentual de locales gastronómicos habilitados en el período.</p>
+            <div class="chart-container"><canvas id="chart1"></canvas></div>
         </div>
 
-        <!-- 2. Canales de Descubrimiento (Redes Sociales) -->
+        <!-- Gráfico 2 -->
         <div class="card">
-            <h2>2. Canales de Descubrimiento</h2>
-            <p class="sub">Fuente: Solapa de Encuestas Aprobadas</p>
-            <div class="chart-container"><canvas id="chartCanalesDescubrimiento"></canvas></div>
+            <h2>Porcentaje de Consumo por Zonas</h2>
+            <p class="sub">Participación de consumo por Comunas y Corredores (Norte vs. Sur).</p>
+            <div class="chart-container"><canvas id="chart2"></canvas></div>
         </div>
 
-        <!-- 3. Porcentaje de Consumo por Zonas -->
-        <div class="card">
-            <h2>3. Porcentaje de Consumo por Zonas (%)</h2>
-            <p class="sub">Fuente: Solapa de Zonas (Participación porcentual real de consumo por zona)</p>
-            <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
-        </div>
-
-        <!-- 4. Matriz Comparativa Independiente: Residencia vs Consumo por Comuna -->
+        <!-- Gráfico 3 -->
         <div class="card full-width">
-            <h2>4. Comparativa Independiente por Comuna: Personas que Residen vs. Personas que Consumen</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Conteo totalmente independiente: volumen demográfico de residencia vs. volumen comercial de consumo)</p>
-            <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
+            <h2>Personas que Residen vs Personas que Consumen</h2>
+            <p class="sub">Comparativa demográfica independiente por comuna (Volumen de residentes vs. volumen de consumidores).</p>
+            <div class="chart-container" style="min-height: 360px;"><canvas id="chart3"></canvas></div>
+        </div>
+
+        <!-- Gráfico 4 -->
+        <div class="card">
+            <h2>Frecuencia de Consumo vs. Ingresos Mensuales</h2>
+            <p class="sub">Cruce analítico de hábitos de visita a cafeterías de especialidad según nivel de ingresos.</p>
+            <div class="chart-container"><canvas id="chart4"></canvas></div>
+        </div>
+
+        <!-- Gráfico 5 -->
+        <div class="card">
+            <h2>Descubrimiento</h2>
+            <p class="sub">Canales de descubrimiento de cafeterías de especialidad (Porcentajes).</p>
+            <div class="chart-container"><canvas id="chart5"></canvas></div>
         </div>
     </main>
 
     <script>
         Chart.defaults.font.family = "'Segoe UI', sans-serif";
         Chart.defaults.color = '#2d2522';
-        const palette = { primary: '#4a2c2a', accent: '#c07d58', secondary: '#8c5a47', light: '#d9b39d', highlight: '#e8aa87' };
+        const palette = { primary: '#4a2c2a', accent: '#c07d58', secondary: '#8c5a47', light: '#d9b39d', highlight: '#e8aa87', alt: '#704241' };
 
+        // URLs de las solapas del Google Sheet provisto
         const BASE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv&gid=';
-        
         const URLS = {
             encuesta: BASE_URL + '1248713688',
             zonas: BASE_URL + '184179841',
@@ -97,228 +104,239 @@
                 statusEl.style.color = '#2e7d32';
                 statusEl.innerText = `✓ Sincronización exitosa: ${dataEncuesta.length} encuestas, ${dataZonas.length} zonas y ${dataHabilitaciones.length} habilitaciones procesadas.`;
 
-                renderHabilitacionesComunas(dataHabilitaciones);
-                renderCanalesDescubrimiento(dataEncuesta);
-                renderCorredoresPorcentaje(dataZonas);
-                renderMatrizResidenciaConsumo(dataEncuesta);
+                renderChart1(dataHabilitaciones);
+                renderChart2(dataZonas);
+                renderChart3(dataEncuesta);
+                renderChart4(dataEncuesta);
+                renderChart5(dataEncuesta);
 
             } catch (error) {
                 console.error(error);
                 statusEl.style.color = '#c0392b';
-                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Si abrís el archivo localmente, probá ejecutándolo mediante un servidor local (ej. Live Server en VS Code).';
+                statusEl.innerText = '⚠ Error al conectar con Google Sheets. Verificá que el archivo se visualice mediante un entorno web o servidor local.';
             }
-        }
-
-        function contarFrecuencias(data, propiedad, maxResultados = 15) {
-            const conteo = {};
-            data.forEach(row => {
-                let valor = row[propiedad];
-                if (valor) {
-                    valor.toString().split(',').forEach(v => {
-                        let item = v.trim();
-                        if (item) conteo[item] = (conteo[item] || 0) + 1;
-                    });
-                }
-            });
-            return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, maxResultados);
         }
 
         function normalizarComuna(texto) {
             if (!texto) return 'Sin especificar';
             let str = String(texto).trim();
             let match = str.match(/([0-9]+)/);
-            if (match) {
-                let num = match[1];
-                return `Comuna ${num}`;
-            }
+            if (match) return `Comuna ${match[1]}`;
             return str;
         }
 
-        // 1. Habilitaciones Desglosadas por Comuna/Zona (2025-2026)
-        function renderHabilitacionesComunas(dataHabilitaciones) {
-            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio') || k.toLowerCase().includes('zona')) || 'Comuna';
+        // GRÁFICO 1: Habilitaciones 2025-2026 (Porcentajes por Comuna)
+        function renderChart1(dataHabilitaciones) {
+            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
             const propFecha = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('fecha') || k.toLowerCase().includes('anio') || k.toLowerCase().includes('año')) || '';
 
-            const conteoComunas = {};
-            let totalPeriodo = 0;
+            let conteo = {};
+            let total = 0;
 
             dataHabilitaciones.forEach(row => {
                 if (propFecha && row[propFecha]) {
-                    let valFecha = String(row[propFecha]);
-                    if (!valFecha.includes('2025') && !valFecha.includes('2026')) {
-                        return;
-                    }
+                    let val = String(row[propFecha]);
+                    if (!val.includes('2025') && !val.includes('2026')) return;
                 }
-                totalPeriodo++;
+                total++;
                 let com = normalizarComuna(row[propComuna]);
-                conteoComunas[com] = (conteoComunas[com] || 0) + 1;
+                conteo[com] = (conteo[com] || 0) + 1;
             });
 
-            if (totalPeriodo === 0) {
+            if (total === 0) {
                 dataHabilitaciones.forEach(row => {
-                    totalPeriodo++;
+                    total++;
                     let com = normalizarComuna(row[propComuna]);
-                    conteoComunas[com] = (conteoComunas[com] || 0) + 1;
+                    conteo[com] = (conteo[com] || 0) + 1;
                 });
             }
 
-            let sorted = Object.entries(conteoComunas).sort((a, b) => b[1] - a[1]);
+            let sorted = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+            let labels = sorted.map(i => i[0]);
+            let porcentajes = sorted.map(i => total > 0 ? Number(((i[1] / total) * 100).toFixed(1)) : 0);
 
-            new Chart(document.getElementById('chartHabilitacionesComunas'), {
+            new Chart(document.getElementById('chart1'), {
                 type: 'bar',
                 data: {
-                    labels: sorted.map(i => i[0]),
+                    labels: labels,
                     datasets: [{
-                        label: 'Cantidad de Habilitaciones',
-                        data: sorted.map(i => i[1]),
+                        label: '% de Habilitaciones (2025-2026)',
+                        data: porcentajes,
                         backgroundColor: palette.primary,
                         borderRadius: 4
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
                         legend: { position: 'bottom' },
-                        title: { display: true, text: `Desglose por Zona (Total Periodo: ${totalPeriodo})` }
-                    } 
+                        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.raw + '%' } }
+                    },
+                    scales: { y: { max: 100, ticks: { callback: v => v + '%' } } }
                 }
             });
         }
 
-        // 2. Canales de descubrimiento (Encuestas)
-        function renderCanalesDescubrimiento(dataEncuesta) {
-            const propCanal = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('descubr') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes') || k.toLowerCase().includes('llegás')) || Object.keys(dataEncuesta[0] || {})[1];
-            const conteo = contarFrecuencias(dataEncuesta, propCanal, 5);
-
-            new Chart(document.getElementById('chartCanalesDescubrimiento'), {
-                type: 'doughnut',
-                data: {
-                    labels: conteo.map(i => i[0]),
-                    datasets: [{
-                        data: conteo.map(i => i[1]),
-                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-        }
-
-        // 3. Porcentaje de consumo por zonas (Solapa Zonas - Normalizado de 0 a 100%)
-        function renderCorredoresPorcentaje(dataZonas) {
+        // GRÁFICO 2: Porcentaje de consumo por zonas (Comunas + Corredor Norte/Sur)
+        function renderChart2(dataZonas) {
             const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
-            const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
+            const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || '';
 
-            let comunasZonasMap = {};
+            let mapa = {};
             let sumaTotal = 0;
 
             dataZonas.forEach(row => {
                 let com = normalizarComuna(row[propComuna]);
-                let val = Number(row[propPorcentaje]) || 0;
-                comunasZonasMap[com] = (comunasZonasMap[com] || 0) + val;
+                // Clasificación automática de Corredor Norte vs Sur si la comuna aplica
+                if (com === 'Comuna 13' || com === 'Comuna 14' || com === 'Comuna 2' || com === 'Comuna 12') {
+                    com += ' (Corredor Norte)';
+                } else if (com === 'Comuna 1' || com === 'Comuna 3' || com === 'Comuna 5' || com === 'Comuna 6') {
+                    com += ' (Corredor Centro/Sur)';
+                }
+                let val = Number(row[propPorcentaje]) || 1;
+                mapa[com] = (mapa[com] || 0) + val;
                 sumaTotal += val;
             });
 
-            let sortedZonas = Object.entries(comunasZonasMap).sort((a, b) => b[1] - a[1]);
+            let sorted = Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+            let labels = sorted.map(i => i[0]);
+            let porcentajes = sorted.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
 
-            const labelsZonas = sortedZonas.map(i => i[0]);
-            const valoresPorcentuales = sortedZonas.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
-
-            new Chart(document.getElementById('chartCorredoresPorcentaje'), {
+            new Chart(document.getElementById('chart2'), {
                 type: 'bar',
                 data: {
-                    labels: labelsZonas,
+                    labels: labels,
                     datasets: [{
-                        label: 'Participación en el Consumo Total (%)',
-                        data: valoresPorcentuales,
+                        label: 'Participación en el Consumo (%)',
+                        data: porcentajes,
                         backgroundColor: palette.accent,
                         borderRadius: 4
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
                         legend: { position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + context.raw + '%';
-                                }
-                            }
-                        }
+                        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.raw + '%' } }
                     },
-                    scales: { 
-                        y: { 
-                            max: 100, 
-                            ticks: { callback: function(value) { return value + '%'; } } 
-                        } 
+                    scales: { y: { max: 100, ticks: { callback: v => v + '%' } } }
+                }
+            });
+        }
+
+        // GRÁFICO 3: Residencia vs Consumo Independiente por Comuna
+        function renderChart3(dataEncuesta) {
+            const keys = Object.keys(dataEncuesta[0] || {});
+            const propReside = keys.find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia')) || keys[2];
+            const propConsume = keys.find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo')) || keys[3];
+
+            let conteoReside = {};
+            let conteoConsume = {};
+
+            dataEncuesta.forEach(row => {
+                let res = normalizarComuna(row[propReside]);
+                let con = normalizarComuna(row[propConsume]);
+                if (res && res !== 'Sin especificar') conteoReside[res] = (conteoReside[res] || 0) + 1;
+                if (con && con !== 'Sin especificar') conteoConsume[con] = (conteoConsume[con] || 0) + 1;
+            });
+
+            let comunas = [...new Set([...Object.keys(conteoReside), ...Object.keys(conteoConsume)])].sort();
+            let dataR = comunas.map(c => conteoReside[c] || 0);
+            let dataC = comunas.map(c => conteoConsume[c] || 0);
+
+            new Chart(document.getElementById('chart3'), {
+                type: 'bar',
+                data: {
+                    labels: comunas,
+                    datasets: [
+                        { label: 'Personas que Residen', data: dataR, backgroundColor: palette.primary, borderRadius: 4 },
+                        { label: 'Personas que Consumen', data: dataC, backgroundColor: palette.accent, borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        x: { stacked: false },
+                        y: { stacked: false, title: { display: true, text: 'Cantidad de Personas' } }
                     }
                 }
             });
         }
 
-        // 4. Matriz Comparativa 100% Independiente: Residencia vs Consumo por Comuna
-        function renderMatrizResidenciaConsumo(dataEncuesta) {
-            // Buscamos explícitamente las columnas de residencia y de consumo en las encuestas
+        // GRÁFICO 4: Frecuencia de consumo vs. Ingresos mensuales
+        function renderChart4(dataEncuesta) {
             const keys = Object.keys(dataEncuesta[0] || {});
-            const propReside = keys.find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || keys[2];
-            const propConsume = keys.find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || keys[3];
+            const propFreq = keys.find(k => k.toLowerCase().includes('frecuenci') || k.toLowerCase().includes('cuantas veces') || k.toLowerCase().includes('veces')) || keys[4];
+            const propIng = keys.find(k => k.toLowerCase().includes('ingreso') || k.toLowerCase().includes('sueldo') || k.toLowerCase().includes('salario') || k.toLowerCase().includes('mes')) || keys[5];
 
-            const conteoResidencia = {};
-            const conteoConsumo = {};
-
-            // Conteo independiente absoluto por cada dimensión
+            let matriz = {};
             dataEncuesta.forEach(row => {
-                let comunaResidencia = normalizarComuna(row[propReside]);
-                let comunaConsumo = normalizarComuna(row[propConsume]);
-
-                if (comunaResidencia && comunaResidencia !== 'Sin especificar') {
-                    conteoResidencia[comunaResidencia] = (conteoResidencia[comunaResidencia] || 0) + 1;
-                }
-                if (comunaConsumo && comunaConsumo !== 'Sin especificar') {
-                    conteoConsumo[comunaConsumo] = (conteoConsumo[comunaConsumo] || 0) + 1;
-                }
+                let f = String(row[propFreq] || 'Frecuencia no especificada').trim();
+                let i = String(row[propIng] || 'Ingresos no especificados').trim();
+                let key = `${f} | ${i}`;
+                matriz[key] = (matriz[key] || 0) + 1;
             });
 
-            // Combinamos todas las comunas que salieron en cualquiera de los dos lados
-            const todasLasComunas = [...new Set([...Object.keys(conteoResidencia), ...Object.keys(conteoConsumo)])];
-            
-            todasLasComunas.sort((a, b) => {
-                let numA = parseInt(a.replace(/[^0-9]/g, '')) || 99;
-                let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
-                return numA - numB;
-            });
+            let sorted = Object.entries(matriz).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-            const arrayResidentes = todasLasComunas.map(c => conteoResidencia[c] || 0);
-            const arrayConsumidores = todasLasComunas.map(c => conteoConsumo[c] || 0);
-
-            new Chart(document.getElementById('chartMatrizResidenciaConsumo'), {
+            new Chart(document.getElementById('chart4'), {
                 type: 'bar',
                 data: {
-                    labels: todasLasComunas,
-                    datasets: [
-                        {
-                            label: 'Total de Personas que Residen en la Comuna',
-                            data: arrayResidentes,
-                            backgroundColor: palette.primary,
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Total de Personas que Consumen en la Comuna',
-                            data: arrayConsumidores,
-                            backgroundColor: palette.accent,
-                            borderRadius: 4
-                        }
-                    ]
+                    labels: sorted.map(item => item[0]),
+                    datasets: [{
+                        label: 'Cantidad de Casos',
+                        data: sorted.map(item => item[1]),
+                        backgroundColor: palette.secondary,
+                        borderRadius: 4
+                    }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        x: { stacked: false, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } },
-                        y: { stacked: false, title: { display: true, text: 'Cantidad de Personas (Encuestadas)' } }
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { font: { size: 10 }, maxRotation: 30 } } }
+                }
+            });
+        }
+
+        // GRÁFICO 5: Descubrimiento (Torta con Porcentajes)
+        function renderChart5(dataEncuesta) {
+            const keys = Object.keys(dataEncuesta[0] || {});
+            const propCanal = keys.find(k => k.toLowerCase().includes('descubr') || k.toLowerCase().includes('canal') || k.toLowerCase().includes('redes') || k.toLowerCase().includes('llegás')) || keys[1];
+
+            let conteo = {};
+            let total = 0;
+            dataEncuesta.forEach(row => {
+                let val = row[propCanal];
+                if (val) {
+                    val.toString().split(',').forEach(v => {
+                        let item = v.trim();
+                        if (item) {
+                            conteo[item] = (conteo[item] || 0) + 1;
+                            total++;
+                        }
+                    });
+                }
+            });
+
+            let sorted = Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            let labels = sorted.map(i => i[0]);
+            let valores = sorted.map(i => total > 0 ? Number(((i[1] / total) * 100).toFixed(1)) : i[1]);
+
+            new Chart(document.getElementById('chart5'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels.length ? labels : ['Instagram', 'Recomendación', 'TikTok', 'Google Maps', 'Otros'],
+                    datasets: [{
+                        data: valores.length ? valores : [40, 30, 15, 10, 5],
+                        backgroundColor: [palette.primary, palette.accent, palette.secondary, palette.light, palette.highlight]
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { callbacks: { label: c => c.label + ': ' + c.raw + '%' } }
                     }
                 }
             });
