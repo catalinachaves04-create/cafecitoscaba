@@ -39,10 +39,10 @@
     <div class="status-bar" id="status-msg">⏳ Sincronizando datos específicos desde Google Sheets...</div>
 
     <main class="dashboard-grid">
-        <!-- 1. Habilitaciones Totales vs Por Comuna (2025-2026) -->
+        <!-- 1. Habilitaciones Desglosadas por Comuna/Zona -->
         <div class="card">
-            <h2>1. Habilitaciones Totales y por Comuna (2025-2026)</h2>
-            <p class="sub">Fuente: Solapa de Habilitaciones (Conteo exacto por comuna en el periodo)</p>
+            <h2>1. Habilitaciones por Comuna / Zona (2025-2026)</h2>
+            <p class="sub">Fuente: Solapa de Habilitaciones (Desglose nominativo por zona)</p>
             <div class="chart-container"><canvas id="chartHabilitacionesComunas"></canvas></div>
         </div>
 
@@ -53,17 +53,17 @@
             <div class="chart-container"><canvas id="chartCanalesDescubrimiento"></canvas></div>
         </div>
 
-        <!-- 3. Porcentaje de Consumo por Comunas (Solapa Zonas - Corregido a 100%) -->
+        <!-- 3. Porcentaje de Consumo por Zonas -->
         <div class="card">
-            <h2>3. Porcentaje de Consumo por Comuna (%)</h2>
-            <p class="sub">Fuente: Solapa de Zonas (Proporción porcentual real del consumo total de la ciudad por comuna)</p>
+            <h2>3. Porcentaje de Consumo por Zonas (%)</h2>
+            <p class="sub">Fuente: Solapa de Zonas (Participación porcentual real de consumo por zona)</p>
             <div class="chart-container"><canvas id="chartCorredoresPorcentaje"></canvas></div>
         </div>
 
         <!-- 4. Matriz Comparativa Independiente: Residencia vs Consumo por Comuna -->
         <div class="card full-width">
-            <h2>4. Comparativa por Comuna: Personas que Residen vs. Personas que Consumen</h2>
-            <p class="sub">Fuente: Solapa de Encuestas (Comparación demográfica independiente: cuántos viven vs. cuántos consumen en cada comuna)</p>
+            <h2>4. Comparativa Independiente por Comuna: Personas que Residen vs. Personas que Consumen</h2>
+            <p class="sub">Fuente: Solapa de Encuestas (Comparación demográfica pura: cuántos viven en la comuna vs. cuántos van a consumir a esa misma comuna)</p>
             <div class="chart-container" style="min-height: 380px;"><canvas id="chartMatrizResidenciaConsumo"></canvas></div>
         </div>
     </main>
@@ -134,9 +134,9 @@
             return str;
         }
 
-        // 1. Habilitaciones Totales y por Comuna en el período 2025-2026
+        // 1. Habilitaciones Desglosadas por Comuna/Zona (2025-2026)
         function renderHabilitacionesComunas(dataHabilitaciones) {
-            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio')) || 'Comuna';
+            const propComuna = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('barrio') || k.toLowerCase().includes('zona')) || 'Comuna';
             const propFecha = Object.keys(dataHabilitaciones[0] || {}).find(k => k.toLowerCase().includes('fecha') || k.toLowerCase().includes('anio') || k.toLowerCase().includes('año')) || '';
 
             const conteoComunas = {};
@@ -162,18 +162,14 @@
                 });
             }
 
-            let sorted = Object.entries(conteoComunas).sort((a, b) => {
-                let numA = parseInt(a[0].replace(/[^0-9]/g, '')) || 99;
-                let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
-                return numA - numB;
-            });
+            let sorted = Object.entries(conteoComunas).sort((a, b) => b[1] - a[1]);
 
             new Chart(document.getElementById('chartHabilitacionesComunas'), {
                 type: 'bar',
                 data: {
                     labels: sorted.length ? sorted.map(i => i[0]) : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
                     datasets: [{
-                        label: `Habilitaciones por Comuna (Total: ${totalPeriodo})`,
+                        label: 'Cantidad de Habilitaciones',
                         data: sorted.length ? sorted.map(i => i[1]) : [45, 52, 60],
                         backgroundColor: palette.primary,
                         borderRadius: 4
@@ -184,7 +180,7 @@
                     maintainAspectRatio: false, 
                     plugins: { 
                         legend: { position: 'bottom' },
-                        title: { display: true, text: `Total de Habilitaciones Analizadas (2025-2026): ${totalPeriodo}` }
+                        title: { display: true, text: `Desglose de Habilitaciones (Total Periodo: ${totalPeriodo})` }
                     } 
                 }
             });
@@ -208,7 +204,7 @@
             });
         }
 
-        // 3. Porcentaje de consumo por comuna (Solapa Zonas - Normalizado a escala 0-100%)
+        // 3. Porcentaje de consumo por zonas (Solapa Zonas - Normalizado de 0 a 100%)
         function renderCorredoresPorcentaje(dataZonas) {
             const propComuna = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('comuna') || k.toLowerCase().includes('zona') || k.toLowerCase().includes('barrio')) || 'Comuna';
             const propPorcentaje = Object.keys(dataZonas[0] || {}).find(k => k.toLowerCase().includes('porcentaje') || k.toLowerCase().includes('consumo') || k.toLowerCase().includes('participacion')) || 'PORCENTAJE';
@@ -223,11 +219,7 @@
                 sumaTotal += val;
             });
 
-            let sortedZonas = Object.entries(comunasZonasMap).sort((a, b) => {
-                let numA = parseInt(a[0].replace(/[^0-9]/g, '')) || 99;
-                let numB = parseInt(b[0].replace(/[^0-9]/g, '')) || 99;
-                return numA - numB;
-            });
+            let sortedZonas = Object.entries(comunasZonasMap).sort((a, b) => b[1] - a[1]);
 
             const labelsZonas = sortedZonas.map(i => i[0]);
             const valoresPorcentuales = sortedZonas.map(i => sumaTotal > 0 ? Number(((i[1] / sumaTotal) * 100).toFixed(1)) : i[1]);
@@ -268,14 +260,13 @@
 
         // 4. Comparativa Independiente: Personas que Residen vs Personas que Consumen por Comuna
         function renderMatrizResidenciaConsumo(dataEncuesta) {
-            // Buscamos de forma flexible las columnas de residencia y de consumo en la encuesta
             const propReside = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('vive') || k.toLowerCase().includes('reside') || k.toLowerCase().includes('barrio_residencia') || k.toLowerCase().includes('comuna_residencia')) || 'Barrio';
             const propConsume = Object.keys(dataEncuesta[0] || {}).find(k => k.toLowerCase().includes('consume') || k.toLowerCase().includes('frecuenta') || k.toLowerCase().includes('zona_consumo') || k.toLowerCase().includes('comuna_consumo')) || propReside;
 
             const comunasResidencia = {};
             const comunasConsumo = {};
 
-            // Conteo separado e independiente por cada métrica para cada comuna
+            // Recorrido independiente para acumular residencia por un lado y consumo por el otro
             dataEncuesta.forEach(row => {
                 let res = normalizarComuna(row[propReside]);
                 let con = normalizarComuna(row[propConsume]);
@@ -288,7 +279,6 @@
                 }
             });
 
-            // Unificamos todas las comunas que aparezcan en cualquiera de los dos lados
             const todasLasComunas = [...new Set([...Object.keys(comunasResidencia), ...Object.keys(comunasConsumo)])];
             
             todasLasComunas.sort((a, b) => {
@@ -306,13 +296,13 @@
                     labels: todasLasComunas.length ? todasLasComunas : ['Comuna 1', 'Comuna 13', 'Comuna 14'],
                     datasets: [
                         {
-                            label: 'Cantidad de Personas que Residen en la Comuna',
+                            label: 'Personas que Residen en la Comuna',
                             data: dataResidentes,
                             backgroundColor: palette.primary,
                             borderRadius: 4
                         },
                         {
-                            label: 'Cantidad de Personas que Consumen en la Comuna',
+                            label: 'Personas que Consumen en la Comuna',
                             data: dataConsumidores,
                             backgroundColor: palette.accent,
                             borderRadius: 4
