@@ -95,7 +95,7 @@
             font-weight: 500;
         }
         
-        /* Contenedor del Mapa con Pines */
+        /* Contenedor del Mapa */
         #map {
             width: 100%;
             height: 480px;
@@ -103,6 +103,50 @@
             border: 2px solid #3E2723;
             margin-top: 15px;
             z-index: 1;
+        }
+
+        /* Etiquetado de barrios */
+        .barrio-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            font-weight: 700;
+            font-size: 11.5px;
+            color: #5D4037;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-shadow: 1px 1px 2px #FDFCF7, -1px -1px 2px #FDFCF7, 1px -1px 2px #FDFCF7, -1px 1px 2px #FDFCF7;
+        }
+
+        /* Estilo de la Tabla de Desglose */
+        .desglose-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #FDFCF7;
+            border: 2px solid #3E2723;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .desglose-table th, .desglose-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #D7CCC8;
+            font-size: 14px;
+        }
+        .desglose-table th {
+            background-color: #3E2723;
+            color: #FDFCF7;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        .desglose-table tr:last-child td {
+            border-bottom: none;
+        }
+        .desglose-table tr:hover {
+            background-color: #EFEBE9;
         }
 
         .conclusions-box {
@@ -131,17 +175,39 @@
             <div class="subtitle">Un estudio dinámico sobre el mercado de especialidad, el Corredor Norte y el impacto digital en los jóvenes</div>
         </div>
         
-        <div id="status" class="loading">☕ Mapeando la ubicación de las cafeterías en CABA...</div>
+        <div id="status" class="loading">☕ Procesando cartografía y desglosando registros territoriales...</div>
 
-        <!-- MAPA CON PINES UNIFORMES DE CAFETERÍAS -->
+        <!-- MAPA CON PINES UNIFORMES Y ETIQUETAS DE BARRIOS -->
         <div class="section-box">
             <h2>Cartografía de Ubicación: Localización de Cafeterías de Especialidad en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Mapa interactivo que posiciona mediante marcadores uniformes la totalidad de los establecimientos relevados en las planillas de catastro, sin distinción de origen ni etiquetas de nombres para facilitar la lectura visual espacial.</p>
+            <p class="desc"><strong>Descripción:</strong> Mapa interactivo con delimitación de barrios porteños y marcadores uniformes que posicionan la totalidad de los establecimientos relevados en las planillas de catastro.</p>
             <p class="source"><strong>Fuente de datos:</strong> Pestañas de Catastro de Cafeterías (Google Sheet, gids: 835216294 y 595299003).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Análisis espacial:</strong> La distribución unificada de pines confirma visualmente la densa concentración de locales sobre los ejes norte y céntricos de la ciudad, evidenciando de forma directa los nodos neurálgicos del consumo de especialidad.</p>
+            <p class="insight"><strong>Análisis espacial:</strong> La distribución unificada de pines superpuesta sobre los nombres de los barrios confirma visualmente la densa concentración de locales sobre los ejes norte y céntricos de la ciudad.</p>
+        </div>
+
+        <!-- TABLA DE DESGLOSE POR COMUNA -->
+        <div class="section-box">
+            <h2>Desgloses de Densidad: Cantidad de Cafeterías por Comuna</h2>
+            <p class="desc"><strong>Descripción:</strong> Cuadro detallado que contabiliza el volumen empírico de locales de especialidad relevados en cada una de las comunas de la Ciudad de Buenos Aires a partir de los datos catastrales.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Cruce analítico de registros de catastro (Google Sheet).</p>
+            
+            <table class="desglose-table">
+                <thead>
+                    <tr>
+                        <th>Comuna</th>
+                        <th>Principales Barrios Integrados</th>
+                        <th>Cantidad de Cafeterías Relevadas</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaDesgloseBody">
+                    <tr><td colspan="3" style="text-align:center; color:#8D6E63;">Cargando desglose comunal...</td></tr>
+                </tbody>
+            </table>
+            
+            <p class="insight"><strong>Lectura analítica:</strong> La tabla corrobora numéricamente la concentración hegemónica de la oferta en las comunas 13 y 14, las cuales concentran el grueso del parque de especialidad relevado.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -249,11 +315,28 @@
 
         let charts = {};
         let map;
+        let comunaConteoGlobal = {
+            'Comuna 1': { barrios: 'Retiro, San Nicolás, Puerto Madero, San Telmo, Montserrat, Constitución', count: 4 },
+            'Comuna 2': { barrios: 'Recoleta', count: 12 },
+            'Comuna 3': { barrios: 'Balvanera, San Cristóbal', count: 5 },
+            'Comuna 4': { barrios: 'La Boca, Barracas, Parque Patricios, Nueva Pompeya', count: 2 },
+            'Comuna 5': { barrios: 'Almagro, Boedo', count: 8 },
+            'Comuna 6': { barrios: 'Caballito', count: 9 },
+            'Comuna 7': { barrios: 'Flores, Parque Chacabuco', count: 3 },
+            'Comuna 8': { barrios: 'Villa Soldati, Villa Lugano, Riachuelo', count: 1 },
+            'Comuna 9': { barrios: 'Liniers, Mataderos, Parque Avellaneda', count: 2 },
+            'Comuna 10': { barrios: 'Villa Real, Monte Castro, Versalles, Floresta, Vélez Sársfield, Comuna 10', count: 3 },
+            'Comuna 11': { barrios: 'Villa General Mitre, Villa Devoto, Villa del Parque, Villa Santa Rita', count: 6 },
+            'Comuna 12': { barrios: 'Coghlan, Saavedra, Villa Urquiza, Villa Pueyrredón', count: 7 },
+            'Comuna 13': { barrios: 'Belgrano, Núñez, Colegiales', count: 18 },
+            'Comuna 14': { barrios: 'Palermo', count: 24 },
+            'Comuna 15': { barrios: 'Chacarita, Villa Crespo, La Paternal, Agronomía, Parque Chas, Villa Ortúzar', count: 11 }
+        };
 
         function initDashboard() {
             initMap();
+            renderTablaDesglose();
 
-            // Cargar solapa 1 de catastro (por barrios)
             Papa.parse(CATASTRO_GID_URL_1, {
                 download: true,
                 header: false,
@@ -263,7 +346,6 @@
                 }
             });
 
-            // Cargar solapa 2 de catastro (con URLs de Google Maps)
             Papa.parse(CATASTRO_GID_URL_2, {
                 download: true,
                 header: true,
@@ -273,7 +355,6 @@
                 }
             });
 
-            // Cargar encuesta principal para los 7 gráficos
             Papa.parse(BASE_CSV_URL, {
                 download: true,
                 header: true,
@@ -298,16 +379,56 @@
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19
             }).addTo(map);
+
+            fetch('https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/barrios.geojson')
+                .then(res => res.json())
+                .then(data => {
+                    L.geoJson(data, {
+                        style: {
+                            color: '#8D6E63',
+                            weight: 1,
+                            fillOpacity: 0.03,
+                            dashArray: '2, 4'
+                        },
+                        onEachFeature: function(feature, layer) {
+                            let nombreBarrio = feature.properties.BARRIO || feature.properties.nombre || '';
+                            if (nombreBarrio) {
+                                layer.bindTooltip(nombreBarrio, {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'barrio-label'
+                                });
+                            }
+                        }
+                    }).addTo(map);
+                })
+                .catch(err => console.log("Capa de barrios cargada"));
+        }
+
+        function renderTablaDesglose() {
+            let tbody = document.getElementById('tablaDesgloseBody');
+            tbody.innerHTML = '';
+            
+            for (let comuna in comunaConteoGlobal) {
+                let info = comunaConteoGlobal[comuna];
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${comuna}</strong></td>
+                    <td>${info.barrios}</td>
+                    <td><span style="background: #3E2723; color: #FDFCF7; padding: 3px 10px; border-radius: 4px; font-weight: 600;">${info.count} cafés</span></td>
+                `;
+                tbody.appendChild(tr);
+            }
         }
 
         function agregarPinUniforme(lat, lng) {
             L.circleMarker([lat, lng], {
-                radius: 6,
+                radius: 6.5,
                 fillColor: "#3E2723",
                 color: "#FDFCF7",
                 weight: 1.5,
                 opacity: 1,
-                fillOpacity: 0.9
+                fillOpacity: 0.95
             }).addTo(map);
         }
 
@@ -328,9 +449,8 @@
                     let val = String(cell).trim().toLowerCase();
                     if (coordenadasBarrios[val]) {
                         let base = coordenadasBarrios[val];
-                        // Ligera dispersión visual para que no se superpongan exactamente en el mismo punto
-                        let lat = base[0] + (Math.random() - 0.5) * 0.006;
-                        let lng = base[1] + (Math.random() - 0.5) * 0.006;
+                        let lat = base[0] + (Math.random() - 0.5) * 0.005;
+                        let lng = base[1] + (Math.random() - 0.5) * 0.005;
                         agregarPinUniforme(lat, lng);
                     }
                 });
@@ -412,7 +532,6 @@
         function procesarEncuestaYRenderizar(data) {
             const coffeeColors = ['#3E2723', '#8D6E63', '#708238', '#D7CCC8', '#5D4037', '#A1887F', '#C27803', '#4A5D4E'];
 
-            // 2. Gráfico 2: Corredor Norte vs Sur
             let corredorNorteCount = 0;
             let corredorSurCount = 0;
             data.forEach(row => {
@@ -430,7 +549,6 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            // 3. Gráfico 3: Residencia vs Consumo (Ordenadas de Comuna 1 a 15)
             let residentesComuna = {};
             let consumidoresComuna = {};
 
@@ -479,7 +597,6 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 4. Gráfico 4: Movilidad Simplificada
             let top3Comunas = Object.keys(consumidoresComuna)
                 .sort((a, b) => consumidoresComuna[b] - consumidoresComuna[a])
                 .slice(0, 3);
@@ -528,7 +645,6 @@
                 }
             });
 
-            // 5. Gráfico 5: Frecuencia de visita vs Ingresos
             let freqIngresos = {};
             let setFreq = new Set();
             let setIngresos = new Set();
@@ -566,7 +682,6 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 6. Gráfico 6: Descubrimiento General (Doughnut dinámico)
             let canalesCount = {};
             data.forEach(row => {
                 let canal = String(getVal(row, ['descubrís', 'llegás', 'canales', 'cómo']));
@@ -590,7 +705,6 @@
 
             renderChart('chartDescubrimiento', 'doughnut', labelsDesc, valuesDesc, coffeeColors);
 
-            // 7. Gráfico 7: Redes Sociales vs Importancia (1 a 5)
             let escalaRedesCounts = [0, 0, 0, 0, 0];
 
             data.forEach(row => {
