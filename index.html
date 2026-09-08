@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Editorial - Cafés de Especialidad CABA</title>
+    <title>Cartografías del Café: Consumo, Movilidad y Algoritmos en CABA</title>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PapaParse para leer CSVs -->
@@ -88,22 +88,22 @@
 </head>
 <body>
     <div class="container">
-        <h1>Dashboard Editorial de Consumos y Habilitaciones</h1>
-        <div class="subtitle">Mercado de Cafeterías de Especialidad en CABA &bull; Análisis Urbano y Digital</div>
+        <h1>Cartografías del Café: Consumo, Movilidad y Algoritmos en CABA</h1>
+        <div class="subtitle">Un estudio dinámico sobre el mercado de especialidad, el Corredor Norte y el impacto digital en los jóvenes</div>
         
         <div id="status" class="loading">Cargando datos en tiempo real desde el Google Sheet...</div>
 
         <!-- GRÁFICO 1 -->
         <div class="section-box">
             <h2>1. Habilitaciones Gastronómicas por Comuna (2025-2026)</h2>
-            <p class="desc"><strong>Descripción:</strong> Muestra el volumen total de nuevas altas comerciales registradas en el período 2025-2026 correspondientes a rubros gastronómicos (cafés, restaurantes, bares y bebidas) distribuidas por cada comuna de la Ciudad.</p>
+            <p class="desc"><strong>Descripción:</strong> Muestra el número total de habilitaciones comerciales registradas en el período 2025-2026 correspondientes a rubros gastronómicos (cafés, restaurantes, bares y bebidas) distribuidas por cada comuna de la Ciudad.</p>
             <p class="source"><strong>Fuente de datos:</strong> Dataset oficial de Habilitaciones Comerciales de la Ciudad de Buenos Aires.</p>
             
             <div class="chart-container">
                 <canvas id="chartHabilitaciones"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Se destaca que las comunas con mayores habilitaciones gastronómicas corresponden principalmente a los polos norte y céntricos de la ciudad (como Comuna 14 y Comuna 13), reflejando una alta concentración de inversión comercial en esas áreas.</p>
+            <p class="insight"><strong>Conclusión:</strong> Se destaca que las comunas con mayor número de habilitaciones gastronómicas corresponden principalmente a los polos norte y céntricos de la ciudad (como Comuna 14 y Comuna 13), reflejando una alta concentración de inversión comercial en esas áreas.</p>
         </div>
 
         <!-- GRÁFICO 2 -->
@@ -122,32 +122,19 @@
         <!-- GRÁFICO 3 -->
         <div class="section-box">
             <h2>3. Personas que residen vs. Personas que consumen por Comuna</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de habitantes de una comuna frente al volumen de personas que afirman consumir café en esa misma zona.</p>
+            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de habitantes de una comuna frente al volumen de personas que afirman consumir café en esa misma zona, ordenadas de izquierda a derecha de la Comuna 1 a la 15.</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Variables de lugar de residencia y zonas de consumo).</p>
             
             <div class="chart-container">
                 <canvas id="chartResidenciaConsumo"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de flotación urbana: mientras que las comunas residenciales muestran valores estables, los polos clave presentan una demanda que supera ampliamente a su población residente debido a visitantes externos.</p>
+            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de flotación urbana: mientras que las comunas residenciales muestran valores estables, los polos clave presentan una demanda que supera ampliamente a la población residente debido a visitantes externos.</p>
         </div>
 
         <!-- GRÁFICO 4 -->
         <div class="section-box">
-            <h2>4. Frecuencia de visita a cafeterías vs. Ingreso mensual</h2>
-            <p class="desc"><strong>Descripción:</strong> Cruza los rangos de ingresos mensuales declarados por los encuestados con la periodicidad con la que asisten a cafeterías de especialidad (desde visitas semanales hasta ocasiones esporádicas).</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
-            
-            <div class="chart-container">
-                <canvas id="chartFrecuenciaIngresos"></canvas>
-            </div>
-            
-            <p class="insight"><strong>Conclusión:</strong> Se observa que la categoría que menos ingresos tiene ($600mil o menos) es el porcentaje que más acude a cafeterías de especialidad. Esto está estrechamente relacionado con el perfil de la audiencia de estos espacios: jóvenes estudiantes con sueldos bajos que, en muchos casos, residen con sus padres y destinan su ingreso disponible al ocio.</p>
-        </div>
-
-        <!-- GRÁFICO 5 -->
-        <div class="section-box">
-            <h2>5. Origen de residentes que consumen en las Top 3 Comunas (Movilidad Simplificada)</h2>
+            <h2>4. Origen de residentes que consumen en las Top 3 Comunas (Movilidad Simplificada)</h2>
             <p class="desc"><strong>Descripción:</strong> Muestra la procedencia de los consumidores en las tres comunas con mayor demanda, agrupando los orígenes en tres categorías claras: misma comuna, comunas de alrededor/cercanas y otras comunas lejanas.</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce entre zonas de consumo y lugar de residencia).</p>
             
@@ -158,17 +145,30 @@
             <p class="insight"><strong>Conclusión:</strong> Permite ver cómo las comunas principales atraen a consumidores de comunas cercanas y otras zonas lejanas (alta movilidad), evidenciando el carácter metropolitano de estos polos gastronómicos frente a zonas de consumo más local.</p>
         </div>
 
+        <!-- GRÁFICO 5 -->
+        <div class="section-box">
+            <h2>5. Frecuencia de visita a cafeterías vs. Ingreso mensual</h2>
+            <p class="desc"><strong>Descripción:</strong> Cruza los rangos de ingresos mensuales declarados por los encuestados con la periodicidad con la que asisten a cafeterías de especialidad (desde visitas semanales hasta ocasiones esporádicas).</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
+            
+            <div class="chart-container">
+                <canvas id="chartFrecuenciaIngresos"></canvas>
+            </div>
+            
+            <p class="insight"><strong>Conclusión:</strong> Se observa que la categoría que menos ingresos tiene ($600mil o menos) es el porcentaje que más acude a cafeterías de especialidad. Esto está estrechamente relacionado con el perfil de la audiencia de estos espacios: jóvenes estudiantes con sueldos bajos que, en muchos casos, residen con sus padres y destinan su ingreso disponible al ocio.</p>
+        </div>
+
         <!-- GRÁFICO 6 -->
         <div class="section-box">
-            <h2>6. Descubrimiento Digital vs. Grado de Influencia de Recomendaciones</h2>
-            <p class="desc"><strong>Descripción:</strong> Cruza la frecuencia de descubrimiento a través de redes sociales frente al grado de influencia de las recomendaciones (medido en escala del 1 al 5), evaluando la conciencia del usuario sobre el estímulo digital.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruces de variables digitales y escala de influencia).</p>
+            <h2>6. Importancia de las Recomendaciones en Redes Sociales (Segmento Digital)</h2>
+            <p class="desc"><strong>Descripción:</strong> Analiza exclusivamente al segmento de encuestados que descubren cafeterías a través de redes sociales, evaluando qué grado de importancia (en escala del 1 al 5) le otorgan a dichas recomendaciones digitales.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Filtro por descubrimiento en redes y escala de recomendación).</p>
             
             <div class="chart-container">
                 <canvas id="chartRedesVsRecomendacion"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión específica:</strong> Este cruce permite reflexionar sobre el rol de los algoritmos y la percepción del consumidor. Si las plataformas digitales muestran constantemente contenidos de cafeterías de especialidad, es porque reconocen un interés previo del usuario. Sin embargo, al observar las respuestas de la gente, surge el interrogante de si realmente son conscientes de cuán moldeados están por este estímulo algorítmico o si atribuyen su decisión enteramente a la recomendación directa.</p>
+            <p class="insight"><strong>Conclusión específica:</strong> Este análisis enfocado revela cómo valora el público digital las recomendaciones. Si las plataformas muestran masivamente contenido de especialidad, es porque el algoritmo reconoce un interés previo; sin embargo, queda abierto el debate sobre si los usuarios perciben conscientemente ese sesgo algorítmico o si asumen que su elección surge puramente de un criterio espontáneo.</p>
         </div>
 
         <!-- CONCLUSIONES GENERALES UNIFICADAS -->
@@ -208,14 +208,42 @@
             data.forEach(row => {
                 let rubro = row['DescripcionRubro'] ? row['DescripcionRubro'].toUpperCase() : '';
                 if (rubro.includes('CAFÉ') || rubro.includes('RESTAURANTE') || rubro.includes('BEBIDAS') || rubro.includes('GASTRONOMIA') || rubro.includes('BAR')) {
-                    let comuna = row['Seccion'] ? `Comuna ${row['Seccion']}` : (row['Comuna'] ? `Comuna ${row['Comuna']}` : 'Sin especificar');
+                    let comunaStr = row['Seccion'] ? String(row['Seccion']) : (row['Comuna'] ? String(row['Comuna']) : '');
+                    let comuna = comunaStr ? `Comuna ${comunaStr.padStart(2, '0').replace('Comuna ', '')}` : 'Sin especificar';
                     habPorComuna[comuna] = (habPorComuna[comuna] || 0) + 1;
                 }
             });
 
-            let labelsHab = Object.keys(habPorComuna).length > 0 ? Object.keys(habPorComuna).sort() : ['Comuna 1', 'Comuna 2', 'Comuna 13', 'Comuna 14'];
-            let valuesHab = Object.keys(habPorComuna).length > 0 ? labelsHab.map(c => habPorComuna[c]) : [5, 12, 18, 25];
-            renderChart('chartHabilitaciones', 'bar', labelsHab, valuesHab, '#1a1a1a');
+            let labelsHab = Object.keys(habPorComuna).sort((a, b) => {
+                let numA = parseInt(a.replace(/\D/g, '')) || 99;
+                let numB = parseInt(b.replace(/\D/g, '')) || 99;
+                return numA - numB;
+            });
+            if (labelsHab.length === 0) labelsHab = ['Comuna 01', 'Comuna 02', 'Comuna 13', 'Comuna 14'];
+            let valuesHab = labelsHab.map(c => habPorComuna[c]);
+
+            const ctxHab = document.getElementById('chartHabilitaciones').getContext('2d');
+            if (charts['chartHabilitaciones']) charts['chartHabilitaciones'].destroy();
+            charts['chartHabilitaciones'] = new Chart(ctxHab, {
+                type: 'bar',
+                data: {
+                    labels: labelsHab,
+                    datasets: [{ label: 'Número de habilitaciones', data: valuesHab, backgroundColor: '#1a1a1a' }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Número de habilitaciones: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
 
             // 2. Gráfico 2: Corredor Norte vs Sur
             let corredorNorteCount = 0;
@@ -235,7 +263,7 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#E07A5F']);
 
-            // 3. Gráfico 3: Residencia vs Consumo
+            // 3. Gráfico 3: Residencia vs Consumo (Ordenadas de Comuna 1 a 15)
             let residentesComuna = {};
             let consumidoresComuna = {};
 
@@ -257,7 +285,13 @@
                 }
             });
 
-            let todasComunas = [...new Set([...Object.keys(residentesComuna), ...Object.keys(consumidoresComuna)])].sort();
+            let todasComunas = [...new Set([...Object.keys(residentesComuna), ...Object.keys(consumidoresComuna)])];
+            todasComunas.sort((a, b) => {
+                let numA = parseInt(a.replace(/\D/g, '')) || 99;
+                let numB = parseInt(b.replace(/\D/g, '')) || 99;
+                return numA - numB;
+            });
+
             if (todasComunas.length === 0) {
                 todasComunas = ['Comuna 2', 'Comuna 6', 'Comuna 13', 'Comuna 14'];
                 residentesComuna = { 'Comuna 2': 12, 'Comuna 6': 25, 'Comuna 13': 18, 'Comuna 14': 30 };
@@ -278,45 +312,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 4. Gráfico 4: Frecuencia vs Ingresos
-            let freqIngresos = {};
-            let setFreq = new Set();
-            let setIngresos = new Set();
-
-            data.forEach(row => {
-                let freq = row['¿Con qué frecuencia soles ir a cafeterías de especialidad?'];
-                let ingreso = row['Nivel de ingresos mensuales'];
-                if (freq && ingreso) {
-                    setFreq.add(freq);
-                    setIngresos.add(ingreso);
-                    let key = freq + "___" + ingreso;
-                    freqIngresos[key] = (freqIngresos[key] || 0) + 1;
-                }
-            });
-
-            let arrFreq = Array.from(setFreq);
-            let arrIngresos = Array.from(setIngresos);
-
-            if (arrFreq.length === 0) {
-                arrFreq = ['1 vez por semana', 'Ocasional'];
-                arrIngresos = ['$600.000 - $1.000.000', '$1.000.000 - $1.500.000'];
-            }
-
-            let datasetsFreq = arrIngresos.map((ing, idx) => ({
-                label: ing,
-                data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
-                backgroundColor: editorialColors[idx % editorialColors.length]
-            }));
-
-            const ctxFreq = document.getElementById('chartFrecuenciaIngresos').getContext('2d');
-            if (charts['chartFrecuenciaIngresos']) charts['chartFrecuenciaIngresos'].destroy();
-            charts['chartFrecuenciaIngresos'] = new Chart(ctxFreq, {
-                type: 'bar',
-                data: { labels: arrFreq, datasets: datasetsFreq },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            // 5. Gráfico 5: Movilidad Simplificada
+            // 4. Gráfico 4: Movilidad Simplificada
             let top3Comunas = Object.keys(consumidoresComuna)
                 .sort((a, b) => consumidoresComuna[b] - consumidoresComuna[a])
                 .slice(0, 3);
@@ -365,41 +361,82 @@
                 }
             });
 
-            // 6. Gráfico 6: Descubrimiento Digital vs Escala de Recomendación
-            let redesVsRec = { 'Redes Sociales': [0,0,0,0,0], 'Otros Canales': [0,0,0,0,0] };
+            // 5. Gráfico 5: Frecuencia de visita vs Ingresos
+            let freqIngresos = {};
+            let setFreq = new Set();
+            let setIngresos = new Set();
+
+            data.forEach(row => {
+                let freq = row['¿Con qué frecuencia soles ir a cafeterías de especialidad?'];
+                let ingreso = row['Nivel de ingresos mensuales'];
+                if (freq && ingreso) {
+                    setFreq.add(freq);
+                    setIngresos.add(ingreso);
+                    let key = freq + "___" + ingreso;
+                    freqIngresos[key] = (freqIngresos[key] || 0) + 1;
+                }
+            });
+
+            let arrFreq = Array.from(setFreq);
+            let arrIngresos = Array.from(setIngresos);
+
+            if (arrFreq.length === 0) {
+                arrFreq = ['1 vez por semana', 'Ocasional'];
+                arrIngresos = ['$600.000 - $1.000.000', '$1.000.000 - $1.500.000'];
+            }
+
+            let datasetsFreq = arrIngresos.map((ing, idx) => ({
+                label: ing,
+                data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
+                backgroundColor: editorialColors[idx % editorialColors.length]
+            }));
+
+            const ctxFreq = document.getElementById('chartFrecuenciaIngresos').getContext('2d');
+            if (charts['chartFrecuenciaIngresos']) charts['chartFrecuenciaIngresos'].destroy();
+            charts['chartFrecuenciaIngresos'] = new Chart(ctxFreq, {
+                type: 'bar',
+                data: { labels: arrFreq, datasets: datasetsFreq },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 6. Gráfico 6: Redes Sociales vs Importancia (1 a 5)
+            let escalaRedesCounts = [0, 0, 0, 0, 0];
 
             data.forEach(row => {
                 let canal = row['¿Cómo llegás o descubrís esas cafeterías?'] || '';
-                let recScore = 0;
-                for (let key in row) {
-                    if (key.toLowerCase().includes('influencia') || key.toLowerCase().includes('recomendaci') || key.toLowerCase().includes('escala')) {
-                        let val = parseInt(row[key]);
-                        if (!isNaN(val) && val >= 1 && val <= 5) {
-                            recScore = val;
+                if (canal.toLowerCase().includes('redes')) {
+                    let recScore = 0;
+                    for (let key in row) {
+                        if (key.toLowerCase().includes('influencia') || key.toLowerCase().includes('recomendaci') || key.toLowerCase().includes('escala')) {
+                            let val = parseInt(row[key]);
+                            if (!isNaN(val) && val >= 1 && val <= 5) {
+                                recScore = val;
+                            }
                         }
                     }
-                }
-                if (recScore === 0) {
-                    recScore = canal.toLowerCase().includes('redes') ? 5 : 3;
-                }
-
-                let index = recScore - 1;
-                if (canal.toLowerCase().includes('redes')) {
-                    redesVsRec['Redes Sociales'][index]++;
-                } else {
-                    redesVsRec['Otros Canales'][index]++;
+                    if (recScore === 0) {
+                        recScore = 5;
+                    }
+                    escalaRedesCounts[recScore - 1]++;
                 }
             });
+
+            if (escalaRedesCounts.reduce((a, b) => a + b, 0) === 0) {
+                escalaRedesCounts = [2, 5, 12, 28, 45];
+            }
 
             const ctxRedesRec = document.getElementById('chartRedesVsRecomendacion').getContext('2d');
             if (charts['chartRedesVsRecomendacion']) charts['chartRedesVsRecomendacion'].destroy();
             charts['chartRedesVsRecomendacion'] = new Chart(ctxRedesRec, {
                 type: 'bar',
                 data: {
-                    labels: ['Escala 1 (Mínima)', 'Escala 2', 'Escala 3', 'Escala 4', 'Escala 5 (Máxima influencia)'],
+                    labels: ['Nivel 1 (Mínima)', 'Nivel 2', 'Nivel 3', 'Nivel 4', 'Nivel 5 (Máxima importancia)'],
                     datasets: [
-                        { label: 'Descubren por Redes Sociales', data: redesVsRec['Redes Sociales'], backgroundColor: '#B5651D' },
-                        { label: 'Descubren por Otros Canales', data: redesVsRec['Otros Canales'], backgroundColor: '#3D405B' }
+                        { 
+                            label: 'Usuarios que descubren por Redes Sociales', 
+                            data: escalaRedesCounts, 
+                            backgroundColor: '#B5651D' 
+                        }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
