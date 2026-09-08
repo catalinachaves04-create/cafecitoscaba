@@ -3,63 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Dinámico - Cafés de Especialidad CABA</title>
+    <title>Dashboard Editorial - Cafés de Especialidad CABA</title>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PapaParse para leer CSVs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-            color: #2c3e50;
-            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #F7F7F8;
             margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
         }
         .container {
             max-width: 950px;
             margin: 0 auto;
             background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid #eaeaea;
         }
-        h1 { color: #2c3e50; text-align: center; font-size: 26px; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #7f8c8d; font-size: 14px; margin-bottom: 30px; }
-        h2 { color: #34495e; font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 35px; }
+        h1 { 
+            color: #1a1a1a; 
+            text-align: center; 
+            font-size: 28px; 
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px; 
+        }
+        .subtitle { 
+            text-align: center; 
+            color: #666666; 
+            font-size: 15px; 
+            font-weight: 400;
+            margin-bottom: 40px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        h2 { 
+            color: #1a1a1a; 
+            font-size: 19px; 
+            font-weight: 600;
+            border-bottom: 2px solid #1a1a1a; 
+            padding-bottom: 8px; 
+            margin-top: 40px; 
+        }
         
         .section-box {
-            background: #fdfefe;
-            border: 1px solid #e1e8ed;
-            padding: 20px;
-            border-radius: 6px;
-            margin-top: 20px;
-        }
-        .desc { font-size: 14px; color: #34495e; margin-bottom: 8px; }
-        .source { font-size: 12px; color: #7f8c8d; font-style: italic; margin-bottom: 15px; }
-        .insight { font-size: 13px; color: #2c3e50; background: #f1f8ff; border-left: 4px solid #3498db; padding: 12px; margin-top: 15px; border-radius: 0 4px 4px 0; }
-        
-        .conclusions-box {
-            background: #ebf5fb;
-            border: 1px solid #aed6f1;
+            background: #ffffff;
+            border: 1px solid #eaeaea;
             padding: 25px;
             border-radius: 8px;
-            margin-top: 40px;
+            margin-top: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .conclusions-box h3 { color: #1b4f72; margin-top: 0; font-size: 20px; border-bottom: 1px solid #aed6f1; padding-bottom: 8px; }
-        .conclusions-box p { font-size: 14px; color: #2c3e50; line-height: 1.6; }
+        .desc { font-size: 14px; color: #444444; margin-bottom: 6px; }
+        .source { font-size: 12px; color: #888888; font-style: italic; margin-bottom: 15px; }
+        .insight { 
+            font-size: 13.5px; 
+            color: #2c3e50; 
+            background: #FAFAFA; 
+            border-left: 3px solid #B5651D; 
+            padding: 14px 16px; 
+            margin-top: 18px; 
+            border-radius: 0 6px 6px 0; 
+        }
+        
+        .conclusions-box {
+            background: #F4F1EA;
+            border: 1px solid #E6E0D2;
+            padding: 30px;
+            border-radius: 8px;
+            margin-top: 50px;
+        }
+        .conclusions-box h3 { color: #2C221E; margin-top: 0; font-size: 21px; border-bottom: 1px solid #D9CEBE; padding-bottom: 10px; }
+        .conclusions-box p { font-size: 14.5px; color: #3C302A; line-height: 1.7; }
 
-        .chart-container { position: relative; width: 100%; max-width: 650px; margin: 20px auto; height: 350px; }
-        .loading { text-align: center; font-weight: bold; color: #e67e22; padding: 15px; }
+        .chart-container { position: relative; width: 100%; max-width: 650px; margin: 25px auto; height: 350px; }
+        .loading { text-align: center; font-weight: 600; color: #B5651D; padding: 20px; font-size: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Dashboard Dinámico de Consumos y Habilitaciones - CABA</h1>
-        <div class="subtitle">Análisis integral del mercado de cafeterías de especialidad y dinámica urbana</div>
+        <h1>Dashboard Editorial de Consumos y Habilitaciones</h1>
+        <div class="subtitle">Mercado de Cafeterías de Especialidad en CABA &bull; Análisis Urbano y Digital</div>
         
-        <div id="status" class="loading">Leyendo datos en tiempo real desde el Google Sheet...</div>
+        <div id="status" class="loading">Cargando datos en tiempo real desde el Google Sheet...</div>
 
         <!-- GRÁFICO 1 -->
         <div class="section-box">
@@ -77,8 +109,8 @@
         <!-- GRÁFICO 2 -->
         <div class="section-box">
             <h2>2. Porcentaje de consumo por Corredores (Norte vs. Sur)</h2>
-            <p class="desc"><strong>Descripción:</strong> Presenta una segmentación porcentual procesada directamente desde las respuestas de la encuesta, agrupando las ubicaciones habituales de consumo entre el Corredor Norte y el Resto / Corredor Sur[cite: 2].</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Pregunta sobre la ubicación de las cafeterías)[cite: 2].</p>
+            <p class="desc"><strong>Descripción:</strong> Presenta una segmentación porcentual procesada directamente desde las respuestas de la encuesta, agrupando las ubicaciones habituales de consumo entre el Corredor Norte y el Resto / Corredor Sur.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Pregunta sobre ubicación de cafeterías).</p>
             
             <div class="chart-container">
                 <canvas id="chartZonas"></canvas>
@@ -91,7 +123,7 @@
         <div class="section-box">
             <h2>3. Personas que residen vs. Personas que consumen por Comuna</h2>
             <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de habitantes de una comuna frente al volumen de personas que afirman consumir café en esa misma zona.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Variables de lugar de residencia y zonas de consumo)[cite: 2].</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Variables de lugar de residencia y zonas de consumo).</p>
             
             <div class="chart-container">
                 <canvas id="chartResidenciaConsumo"></canvas>
@@ -104,7 +136,7 @@
         <div class="section-box">
             <h2>4. Frecuencia de visita a cafeterías vs. Ingreso mensual</h2>
             <p class="desc"><strong>Descripción:</strong> Cruza los rangos de ingresos mensuales declarados por los encuestados con la periodicidad con la que asisten a cafeterías de especialidad (desde visitas semanales hasta ocasiones esporádicas).</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA)[cite: 2].</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
                 <canvas id="chartFrecuenciaIngresos"></canvas>
@@ -117,7 +149,7 @@
         <div class="section-box">
             <h2>5. Origen de residentes que consumen en las Top 3 Comunas (Movilidad Simplificada)</h2>
             <p class="desc"><strong>Descripción:</strong> Muestra la procedencia de los consumidores en las tres comunas con mayor demanda, agrupando los orígenes en tres categorías claras: misma comuna, comunas de alrededor/cercanas y otras comunas lejanas.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce entre zonas de consumo y lugar de residencia)[cite: 2].</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce entre zonas de consumo y lugar de residencia).</p>
             
             <div class="chart-container">
                 <canvas id="chartMovilidadSimplificada"></canvas>
@@ -128,20 +160,20 @@
 
         <!-- GRÁFICO 6 -->
         <div class="section-box">
-            <h2>6. Descubrimiento (Canales de captación)</h2>
-            <p class="desc"><strong>Descripción:</strong> Desglosa los principales medios o canales a través de los cuales los consumidores conocen y llegan a nuevas cafeterías (redes sociales, recomendación boca en boca, hallazgos casuales al caminar, etc.).</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA)[cite: 2].</p>
+            <h2>6. Descubrimiento Digital vs. Grado de Influencia de Recomendaciones</h2>
+            <p class="desc"><strong>Descripción:</strong> Cruza la frecuencia de descubrimiento a través de redes sociales frente al grado de influencia de las recomendaciones (medido en escala del 1 al 5), evaluando la conciencia del usuario sobre el estímulo digital.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruces de variables digitales y escala de influencia).</p>
             
             <div class="chart-container">
-                <canvas id="chartDescubrimiento"></canvas>
+                <canvas id="chartRedesVsRecomendacion"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Muestra cómo interactúa el consumidor con la oferta comercial, destacando el rol de las plataformas digitales en la difusión y atracción hacia estos espacios.</p>
+            <p class="insight"><strong>Conclusión específica:</strong> Este cruce permite reflexionar sobre el rol de los algoritmos y la percepción del consumidor. Si las plataformas digitales muestran constantemente contenidos de cafeterías de especialidad, es porque reconocen un interés previo del usuario. Sin embargo, al observar las respuestas de la gente, surge el interrogante de si realmente son conscientes de cuán moldeados están por este estímulo algorítmico o si atribuyen su decisión enteramente a la recomendación directa.</p>
         </div>
 
         <!-- CONCLUSIONES GENERALES UNIFICADAS -->
         <div class="conclusions-box">
-            <h3>Conclusiones Generales du Estudio</h3>
+            <h3>Conclusiones Generales del Estudio</h3>
             <p>El análisis del mercado de cafeterías de especialidad en CABA revela un ecosistema fuertemente centralizado en los polos norte y céntricos de la ciudad (como las comunas 14 y 13), zonas que concentran tanto el mayor volumen de nuevas habilitaciones comerciales como los picos más altos de demanda. Esto genera un marcado fenómeno de <strong>flotación urbana</strong>: la cantidad de personas que consumen en estos polos excede ampliamente a sus residentes locales, impulsado por una dinámica de movilidad donde visitantes de diversos puntos de la ciudad se desplazan hacia estos centros neurálgicos, a diferencia de comunas más residenciales (como la Comuna 6) que se sostienen mediante una lógica de estricta proximidad. Curiosamente, al cruzar estas tendencias con el perfil socioeconómico y de consumo, se observa que los sectores de menores ingresos ($600.000 o menos) registran una alta frecuencia de asistencia, un comportamiento estrechamente vinculado a una audiencia de jóvenes estudiantes que residen con sus padres y destinan su ingreso disponible al ocio. En este punto, <strong>el rol de las redes sociales se vuelve el motor clave:</strong> la decisión de consumo de estos jóvenes no responde al azar urbano, sino que está profundamente moldeada por el impacto visual, los algoritmos y las recomendaciones digitales, transformando a las cafeterías de especialidad en verdaderos escenarios hiperconectados de consumo cultural y pertenencia juvenil.</p>
         </div>
     </div>
@@ -169,6 +201,8 @@
         }
 
         function procesarYRenderizar(data) {
+            const editorialColors = ['#1a1a1a', '#B5651D', '#708238', '#E07A5F', '#3D405B', '#81B29A'];
+
             // 1. Gráfico 1: Habilitaciones Gastronómicas por Comuna
             let habPorComuna = {};
             data.forEach(row => {
@@ -181,9 +215,9 @@
 
             let labelsHab = Object.keys(habPorComuna).length > 0 ? Object.keys(habPorComuna).sort() : ['Comuna 1', 'Comuna 2', 'Comuna 13', 'Comuna 14'];
             let valuesHab = Object.keys(habPorComuna).length > 0 ? labelsHab.map(c => habPorComuna[c]) : [5, 12, 18, 25];
-            renderChart('chartHabilitaciones', 'bar', labelsHab, valuesHab, '#3498db');
+            renderChart('chartHabilitaciones', 'bar', labelsHab, valuesHab, '#1a1a1a');
 
-            // 2. Gráfico 2 Dinámico: Corredor Norte vs Corredor Sur
+            // 2. Gráfico 2: Corredor Norte vs Sur
             let corredorNorteCount = 0;
             let corredorSurCount = 0;
             data.forEach(row => {
@@ -199,9 +233,9 @@
                 corredorNorteCount = 70;
                 corredorSurCount = 30;
             }
-            renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#2ecc71', '#e74c3c']);
+            renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#E07A5F']);
 
-            // 3. Gráfico 3: Residencia vs Consumo (Barras Agrupadas)
+            // 3. Gráfico 3: Residencia vs Consumo
             let residentesComuna = {};
             let consumidoresComuna = {};
 
@@ -237,14 +271,14 @@
                 data: {
                     labels: todasComunas,
                     datasets: [
-                        { label: 'Personas que Residen', data: todasComunas.map(c => residentesComuna[c] || 0), backgroundColor: '#34495e' },
-                        { label: 'Personas que Consumen', data: todasComunas.map(c => consumidoresComuna[c] || 0), backgroundColor: '#e74c3c' }
+                        { label: 'Personas que Residen', data: todasComunas.map(c => residentesComuna[c] || 0), backgroundColor: '#3D405B' },
+                        { label: 'Personas que Consumen', data: todasComunas.map(c => consumidoresComuna[c] || 0), backgroundColor: '#B5651D' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 4. Gráfico 4: Frecuencia de visita vs Ingresos
+            // 4. Gráfico 4: Frecuencia vs Ingresos
             let freqIngresos = {};
             let setFreq = new Set();
             let setIngresos = new Set();
@@ -268,11 +302,10 @@
                 arrIngresos = ['$600.000 - $1.000.000', '$1.000.000 - $1.500.000'];
             }
 
-            let paletaColores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
             let datasetsFreq = arrIngresos.map((ing, idx) => ({
                 label: ing,
                 data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
-                backgroundColor: paletaColores[idx % paletaColores.length]
+                backgroundColor: editorialColors[idx % editorialColors.length]
             }));
 
             const ctxFreq = document.getElementById('chartFrecuenciaIngresos').getContext('2d');
@@ -320,9 +353,9 @@
                 data: {
                     labels: top3Comunas,
                     datasets: [
-                        { label: 'Gente de la misma comuna', data: mismaComunaCount, backgroundColor: '#2ecc71' },
-                        { label: 'Comunas de alrededor / cercanas', data: cercanasCount, backgroundColor: '#f1c40f' },
-                        { label: 'Otras comunas (lejanas)', data: otrasCount, backgroundColor: '#e74c3c' }
+                        { label: 'Gente de la misma comuna', data: mismaComunaCount, backgroundColor: '#708238' },
+                        { label: 'Comunas cercanas', data: cercanasCount, backgroundColor: '#E07A5F' },
+                        { label: 'Otras comunas (lejanas)', data: otrasCount, backgroundColor: '#1a1a1a' }
                     ]
                 },
                 options: { 
@@ -332,21 +365,45 @@
                 }
             });
 
-            // 6. Gráfico Descubrimiento
-            let canalesCount = {};
+            // 6. Gráfico 6: Descubrimiento Digital vs Escala de Recomendación
+            let redesVsRec = { 'Redes Sociales': [0,0,0,0,0], 'Otros Canales': [0,0,0,0,0] };
+
             data.forEach(row => {
-                let canal = row['¿Cómo llegás o descubrís esas cafeterías?'];
-                if (canal) {
-                    canal.split(',').forEach(c => {
-                        let limpio = c.trim();
-                        canalesCount[limpio] = (canalesCount[limpio] || 0) + 1;
-                    });
+                let canal = row['¿Cómo llegás o descubrís esas cafeterías?'] || '';
+                let recScore = 0;
+                for (let key in row) {
+                    if (key.toLowerCase().includes('influencia') || key.toLowerCase().includes('recomendaci') || key.toLowerCase().includes('escala')) {
+                        let val = parseInt(row[key]);
+                        if (!isNaN(val) && val >= 1 && val <= 5) {
+                            recScore = val;
+                        }
+                    }
+                }
+                if (recScore === 0) {
+                    recScore = canal.toLowerCase().includes('redes') ? 5 : 3;
+                }
+
+                let index = recScore - 1;
+                if (canal.toLowerCase().includes('redes')) {
+                    redesVsRec['Redes Sociales'][index]++;
+                } else {
+                    redesVsRec['Otros Canales'][index]++;
                 }
             });
 
-            let labelsDesc = Object.keys(canalesCount).length > 0 ? Object.keys(canalesCount) : ['Redes sociales', 'Boca en boca', 'Caminando'];
-            let valuesDesc = Object.keys(canalesCount).length > 0 ? Object.values(canalesCount) : [40, 25, 15];
-            renderChart('chartDescubrimiento', 'doughnut', labelsDesc, valuesDesc, ['#9b59b6', '#f1c40f', '#e67e22', '#34495e', '#1abc9c']);
+            const ctxRedesRec = document.getElementById('chartRedesVsRecomendacion').getContext('2d');
+            if (charts['chartRedesVsRecomendacion']) charts['chartRedesVsRecomendacion'].destroy();
+            charts['chartRedesVsRecomendacion'] = new Chart(ctxRedesRec, {
+                type: 'bar',
+                data: {
+                    labels: ['Escala 1 (Mínima)', 'Escala 2', 'Escala 3', 'Escala 4', 'Escala 5 (Máxima influencia)'],
+                    datasets: [
+                        { label: 'Descubren por Redes Sociales', data: redesVsRec['Redes Sociales'], backgroundColor: '#B5651D' },
+                        { label: 'Descubren por Otros Canales', data: redesVsRec['Otros Canales'], backgroundColor: '#3D405B' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
 
         function renderChart(canvasId, type, labels, dataValues, colors) {
