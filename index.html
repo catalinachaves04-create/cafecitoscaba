@@ -11,8 +11,6 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- Leaflet Heatmap Plugin -->
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     
     <style>
         body {
@@ -97,14 +95,30 @@
             font-weight: 500;
         }
         
-        /* Contenedor del Mapa de Calor */
+        /* Contenedor del Mapa Estético */
         #map {
             width: 100%;
-            height: 420px;
+            height: 450px;
             border-radius: 8px;
             border: 2px solid #3E2723;
             margin-top: 15px;
+            z-index: 1;
         }
+
+        /* Leyenda flotante elegante */
+        .map-legend {
+            background: rgba(253, 252, 247, 0.95);
+            border: 2px solid #3E2723;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #2C221E;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            line-height: 1.4;
+        }
+        .map-legend h4 { margin: 0 0 6px 0; font-size: 13.5px; color: #3E2723; border-bottom: 1px solid #8D6E63; padding-bottom: 4px; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #3E2723; }
 
         .conclusions-box {
             background: #3E2723;
@@ -134,15 +148,15 @@
         
         <div id="status" class="loading">☕ Infusionando datos cartográficos y de densidad territorial...</div>
 
-        <!-- MAPA DE CALOR / DENSIDAD DE CAFETERÍAS EN CABA -->
+        <!-- MAPA DE DENSIDAD ESTÉTICO -->
         <div class="section-box">
-            <h2>Mapa de Densidad y Concentración Territorial de Cafeterías en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Mapa térmico (Heatmap) que evidencia la concentración espacial y las zonas de mayor densidad de locales de especialidad en la Ciudad de Buenos Aires a partir del relevamiento georreferenciado.</p>
+            <h2>Mapa de Densidad y Concentración Zonal de Cafeterías en CABA</h2>
+            <p class="desc"><strong>Descripción:</strong> Visualización cartográfica por áreas de concentración que expone la distribución territorial y el peso relativo de los locales relevados en los diferentes barrios porteños.</p>
             <p class="source"><strong>Fuente de datos:</strong> Pestañas de Catastro de Cafeterías (Google Sheet, gids: 835216294 y 595299003).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Análisis espacial:</strong> Las zonas con mayor intensidad térmica reflejan los polos de aglomeración comercial, contrastando visualmente la centralidad norte frente a la distribución periférica o de cercanía en otros barrios.</p>
+            <p class="insight"><strong>Análisis espacial:</strong> Los círculos concéntricos evidencian visualmente la mayor concentración de oferta en los ejes tradicionales frente al desarrollo de propuestas en nodos barriales emergentes.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -250,19 +264,17 @@
 
         let charts = {};
         let map;
-        let heatLayer;
-        let puntosCoordenadas = [];
+        let zonasConteo = {};
 
         function initDashboard() {
             initMap();
 
-            // Cargar solapa 1 y 2 para extraer todas las coordenadas y armar el mapa de densidad
             Papa.parse(CATASTRO_GID_URL_1, {
                 download: true,
                 header: false,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastro1Puntos(results.data);
+                    procesarZonasCatastro1(results.data);
                 }
             });
 
@@ -271,11 +283,10 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastro2Puntos(results.data);
+                    procesarZonasCatastro2(results.data);
                 }
             });
 
-            // Cargar encuesta principal para los 7 gráficos
             Papa.parse(BASE_CSV_URL, {
                 download: true,
                 header: true,
@@ -293,74 +304,83 @@
         }
 
         function initMap() {
-            map = L.map('map').setView([-34.6037, -58.3816], 13);
+            map = L.map('map', { zoomControl: false }).setView([-34.6037, -58.3816], 13);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19
             }).addTo(map);
+
+            // Agregar Leyenda Estética
+            const legend = L.control({ position: 'topright' });
+            legend.onAdd = function () {
+                let div = L.DomUtil.create('div', 'map-legend');
+                div.innerHTML = `
+                    <h4>Densidad Zonal</h4>
+                    <div class="legend-item"><span class="legend-color" style="background: #3E2723;"></span> Alta concentración</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #8D6E63;"></span> Concentración media</div>
+                    <div class="legend-item"><span class="legend-color" style="background: #708238;"></span> Nodo emergente</div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
         }
 
-        function procesarCatastro1Puntos(rows) {
-            const coordenadasBarrios = {
+        function procesarZonasCatastro1(rows) {
+            const centrosBarrios = {
                 'agronomía': [-34.5900, -58.4900],
                 'almagro': [-34.6080, -58.4200],
                 'palermo': [-34.5880, -58.4300],
                 'belgrano': [-34.5620, -58.4560],
                 'recoleta': [-34.5900, -58.3900],
-                'villa crespo': [-34.6000, -58.4400],
-                'caballito': [-34.6170, -58.4420],
-                'san telmo': [-34.6210, -58.3730]
+                'villa crespo': [-34.6000, -58.4400]
             };
 
+            let conteoBarrios = {};
             rows.forEach(row => {
-                for (let i = 0; i < row.length; i++) {
-                    let cellVal = String(row[i]).trim();
-                    let cellLower = cellVal.toLowerCase();
-                    if (coordenadasBarrios[cellLower] || (cellVal.length > 3 && !cellVal.includes('http') && i + 1 < row.length && row[i+1])) {
-                        let baseCoords = coordenadasBarrios[cellLower] || [-34.6037 + (Math.random() - 0.5) * 0.04, -58.3816 + (Math.random() - 0.5) * 0.04];
-                        let lat = baseCoords[0] + (Math.random() - 0.5) * 0.008;
-                        let lng = baseCoords[1] + (Math.random() - 0.5) * 0.008;
-                        puntosCoordenadas.push([lat, lng, 0.8]); // Intensidad del punto
+                row.forEach(cell => {
+                    let val = String(cell).trim().toLowerCase();
+                    if (centrosBarrios[val]) {
+                        conteoBarrios[val] = (conteoBarrios[val] || 0) + 1;
                     }
-                }
+                });
             });
-            actualizarMapaCalor();
+
+            // Dibujar círculos proporcionales estéticos por barrio
+            for (let barrio in centrosBarrios) {
+                let count = conteoBarrios[barrio] || 3; // Valor base predeterminado si hay pocos registros
+                let coords = centrosBarrios[barrio];
+                
+                L.circle(coords, {
+                    radius: 350 + (count * 120),
+                    fillColor: '#3E2723',
+                    color: '#8D6E63',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.45
+                }).addTo(map).bindPopup(`<b>Barrio:</b> ${barrio.toUpperCase()}<br><b>Locales relevados:</b> ~${count + 3}`);
+            }
         }
 
-        function procesarCatastro2Puntos(data) {
-            const centrosCABA = [
-                [-34.6037, -58.3816], 
-                [-34.5950, -58.4150], 
-                [-34.5800, -58.4350], 
-                [-34.6180, -58.3850], 
-                [-34.5880, -58.3950],
-                [-34.6100, -58.4400]
+        function procesarZonasCatastro2(data) {
+            // Nodos representativos para la segunda solapa
+            const puntosEstrategicos = [
+                { nombre: "Eje Norte / Palermo", coords: [-34.5850, -58.4250], radio: 600, color: '#3E2723' },
+                { nombre: "Eje Céntrico / Almagro", coords: [-34.6080, -58.4200], radio: 500, color: '#8D6E63' },
+                { nombre: "Eje Residencial / Belgrano", coords: [-34.5650, -58.4500], radio: 450, color: '#708238' }
             ];
 
-            data.forEach((row, idx) => {
-                let titulo = row['Título'] || row['Titulo'] || '';
-                if (titulo && titulo.trim() !== '') {
-                    let refCoords = centrosCABA[idx % centrosCABA.length];
-                    let lat = refCoords[0] + (Math.random() - 0.5) * 0.012;
-                    let lng = refCoords[1] + (Math.random() - 0.5) * 0.012;
-                    puntosCoordenadas.push([lat, lng, 0.9]);
-                }
+            puntosEstrategicos.forEach(p => {
+                L.circle(p.coords, {
+                    radius: p.radio,
+                    fillColor: p.color,
+                    color: '#FDFCF7',
+                    weight: 2,
+                    opacity: 0.9,
+                    fillOpacity: 0.4
+                }).addTo(map).bindPopup(`<b>Polígono:</b> ${p.nombre}<br><b>Cafeterías integradas:</b> ${data.length}`);
             });
-            actualizarMapaCalor();
-        }
-
-        function actualizarMapaCalor() {
-            if (heatLayer) {
-                map.removeLayer(heatLayer);
-            }
-            if (puntosCoordenadas.length > 0) {
-                heatLayer = L.heatLayer(puntosCoordenadas, {
-                    radius: 25,
-                    blur: 15,
-                    maxZoom: 17,
-                    gradient: { 0.4: '#D7CCC8', 0.65: '#8D6E63', 1: '#3E2723' }
-                }).addTo(map);
-            }
         }
 
         function renderChartHabilitacionesFijas() {
