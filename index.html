@@ -76,28 +76,28 @@
 
         <!-- GRÁFICO 2 -->
         <div class="section-box">
-            <h2>2. Porcentaje de consumo por zonas</h2>
-            <p class="desc"><strong>Descripción:</strong> Presenta una segmentación porcentual macro del consumo total de cafeterías, dividiendo las preferencias entre los corredores gastronómicos tradicionales (Corredor Norte) frente al resto de los barrios porteños.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
+            <h2>2. Porcentaje de consumo por Corredores (Norte vs. Sur)</h2>
+            <p class="desc"><strong>Descripción:</strong> Presenta una segmentación porcentual procesada directamente desde las respuestas de la encuesta, agrupando las ubicaciones habituales de consumo entre el Corredor Norte y el Corredor Sur.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Pregunta sobre ubicación de cafeterías).</p>
             
             <div class="chart-container">
                 <canvas id="chartZonas"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Pone en evidencia la centralización del mercado de cafeterías de especialidad, donde ciertos corredores específicos funcionan como grandes imanes para residentes de toda la ciudad.</p>
+            <p class="insight"><strong>Conclusión:</strong> Pone en evidencia la polarización geográfica del consumo, demostrando que el Corredor Norte acapara la gran mayoría de las preferencias frente al resto de la ciudad.</p>
         </div>
 
-        <!-- GRÁFICO 3 & 5 UNIFICADO -->
+        <!-- GRÁFICO 3 UNIFICADO -->
         <div class="section-box">
-            <h2>3. Residencia, Consumo Total y Origen de la Flotación Urbana (Gráfico Unificado)</h2>
-            <p class="desc"><strong>Descripción:</strong> Gráfico compuesto que cruza, por comuna, la cantidad de personas que residen con el volumen total de personas que consumen allí, permitiendo visualizar la brecha de demanda y la dinámica urbana.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce de variables de lugar de residencia y zonas de consumo).</p>
+            <h2>3. Residencia, Consumo Total y Orígenes de Movilidad (Gráfico Unificado)</h2>
+            <p class="desc"><strong>Descripción:</strong> Gráfico conjunto que une la cantidad de personas que residen con el volumen de consumo total por comuna, integrando además el desglose detallado de las comunas de origen de los visitantes para visualizar la flotación urbana y los flujos de movilidad.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce dinámico de residencia, zonas de consumo y procedencia).</p>
             
-            <div class="chart-container" style="height: 400px;">
+            <div class="chart-container" style="height: 420px;">
                 <canvas id="chartResidenciaMovilidadUnificado"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de <strong>flotación urbana</strong>: la comuna con mayor consumo presenta una brecha masiva donde la demanda supera ampliamente a su población residente. En la Comuna 14 y Comuna 13 se observa una gran amplitud de residentes de otros barrios que viajan para consumir (alta movilidad), mientras que en la Comuna 6 el consumo responde a una lógica de estricta proximidad.</p>
+            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de <strong>flotación urbana</strong>: los polos principales presentan una brecha masiva donde la demanda supera a su población residente. Las barras de origen detallan cómo la Comuna 14 y 13 atraen una gran amplitud de residentes de diversos barrios lejanos, mientras que la Comuna 6 se sostiene mediante una lógica de estricta proximidad.</p>
         </div>
 
         <!-- GRÁFICO 4 -->
@@ -113,7 +113,7 @@
             <p class="insight"><strong>Conclusión:</strong> Se observa que la categoría que menos ingresos tiene ($600mil o menos) es el porcentaje que más acude a cafeterías de especialidad. Esto está estrechamente relacionado con el perfil de la audiencia de estos espacios: jóvenes estudiantes con sueldos bajos que, en muchos casos, residen con sus padres y destinan su ingreso disponible al ocio.</p>
         </div>
 
-        <!-- GRÁFICO 6 -->
+        <!-- GRÁFICO 5 -->
         <div class="section-box">
             <h2>5. Descubrimiento (Canales de captación)</h2>
             <p class="desc"><strong>Descripción:</strong> Desglosa los principales medios o canales a través de los cuales los consumidores conocen y llegan a nuevas cafeterías (redes sociales, recomendación boca en boca, hallazgos casuales al caminar, etc.).</p>
@@ -170,10 +170,25 @@
             let valuesHab = Object.keys(habPorComuna).length > 0 ? labelsHab.map(c => habPorComuna[c]) : [5, 12, 18, 25];
             renderChart('chartHabilitaciones', 'bar', labelsHab, valuesHab, '#3498db');
 
-            // 2. Gráfico Zonas (Pie)
-            renderChart('chartZonas', 'pie', ['Corredor Norte (Palermo/Belgrano/Recoleta)', 'Resto de CABA'], [70, 30], ['#2ecc71', '#e74c3c']);
+            // 2. Gráfico 2 Dinámico: Corredor Norte vs Corredor Sur
+            let corredorNorteCount = 0;
+            let corredorSurCount = 0;
+            data.forEach(row => {
+                let zonas = row['¿En qué barrios/localidades suelen estar las cafeterías que visitás?'] || '';
+                let upperZonas = zonas.toUpperCase();
+                if (upperZonas.includes('13') || upperZonas.includes('14') || upperZonas.includes('2') || upperZonas.includes('PALERMO') || upperZonas.includes('BELGRANO') || upperZonas.includes('RECOLETA')) {
+                    corredorNorteCount++;
+                } else if (zonas.trim() !== '') {
+                    corredorSurCount++;
+                }
+            });
+            if (corredorNorteCount === 0 && corredorSurCount === 0) {
+                corredorNorteCount = 70;
+                corredorSurCount = 30;
+            }
+            renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#2ecc71', '#e74c3c']);
 
-            // 3. Gráfico Unificado (Residencia vs Consumo)
+            // 3. Gráfico Unificado (Residencia + Consumo Total + Orígenes de Movilidad apilados)
             let residentesComuna = {};
             let consumidoresComuna = {};
 
@@ -202,6 +217,28 @@
                 consumidoresComuna = { 'Comuna 2': 28, 'Comuna 6': 42, 'Comuna 13': 35, 'Comuna 14': 55 };
             }
 
+            let top3Comunas = Object.keys(consumidoresComuna)
+                .sort((a, b) => consumidoresComuna[b] - consumidoresComuna[a])
+                .slice(0, 3);
+            if (top3Comunas.length === 0) top3Comunas = ['Comuna 14', 'Comuna 6', 'Comuna 13'];
+
+            let origenPorTop3 = {};
+            top3Comunas.forEach(comunaTop => {
+                origenPorTop3[comunaTop] = {};
+                data.forEach(row => {
+                    let consumoZonas = row['¿En qué barrios/localidades suelen estar las cafeterías que visitás?'] || '';
+                    let residencia = row['Lugar de residencia'] ? row['Lugar de residencia'].split(':')[0].trim() : 'Desconocido';
+                    if (consumoZonas.includes(comunaTop)) {
+                        origenPorTop3[comunaTop][residencia] = (origenPorTop3[comunaTop][residencia] || 0) + 1;
+                    }
+                });
+            });
+
+            let allResidentOrigins = [...new Set(data.map(r => r['Lugar de residencia'] ? r['Lugar de residencia'].split(':')[0].trim() : null).filter(Boolean))].sort();
+            if (allResidentOrigins.length === 0) allResidentOrigins = ['Comuna 2', 'Comuna 6', 'Comuna 13', 'Comuna 14'];
+
+            let paletaColores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
+
             let datasetsUnificados = [
                 {
                     label: 'Personas que Residen',
@@ -215,6 +252,19 @@
                 }
             ];
 
+            allResidentOrigins.forEach((origen, idx) => {
+                datasetsUnificados.push({
+                    label: `Origen: Residen en ${origen}`,
+                    data: todasComunas.map(c => {
+                        if (top3Comunas.includes(c)) {
+                            return origenPorTop3[c][origen] || 0;
+                        }
+                        return 0;
+                    }),
+                    backgroundColor: paletaColores[idx % paletaColores.length]
+                });
+            });
+
             const ctxUnificado = document.getElementById('chartResidenciaMovilidadUnificado').getContext('2d');
             if (charts['chartResidenciaMovilidadUnificado']) charts['chartResidenciaMovilidadUnificado'].destroy();
             charts['chartResidenciaMovilidadUnificado'] = new Chart(ctxUnificado, {
@@ -225,7 +275,11 @@
                 },
                 options: { 
                     responsive: true, 
-                    maintainAspectRatio: false
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true }
+                    }
                 }
             });
 
@@ -253,7 +307,6 @@
                 arrIngresos = ['$600.000 - $1.000.000', '$1.000.000 - $1.500.000'];
             }
 
-            let paletaColores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
             let datasetsFreq = arrIngresos.map((ing, idx) => ({
                 label: ing,
                 data: arrFreq.map(f => freqIngresos[f + "___" + ing] || 0),
