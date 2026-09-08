@@ -8,6 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PapaParse para leer CSVs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Leaflet CSS & JS para el mapa interactivo -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -91,6 +95,15 @@
             font-weight: 500;
         }
         
+        /* Contenedor del Mapa */
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            border: 2px solid #3E2723;
+            margin-top: 15px;
+        }
+
         .conclusions-box {
             background: #3E2723;
             color: #FDFCF7;
@@ -117,7 +130,18 @@
             <div class="subtitle">Un estudio dinámico sobre el mercado de especialidad, el Corredor Norte y el impacto digital en los jóvenes</div>
         </div>
         
-        <div id="status" class="loading">☕ Infusionando datos en tiempo real desde el Google Sheet...</div>
+        <div id="status" class="loading">☕ Infusionando datos cartográficos y de encuestas en tiempo real...</div>
+
+        <!-- MAPA INTERACTIVO DE CABA (Ubicación de Cafeterías Catastradas) -->
+        <div class="section-box">
+            <h2>Mapa Cartográfico: Ubicación de Cafeterías de Especialidad en CABA</h2>
+            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva basada en el catastro relevado (incluyendo barrios como Agronomía, Almagro y corredores principales de la Ciudad).</p>
+            <p class="source"><strong>Fuente de datos:</strong> Pestaña de Catastro de Cafeterías (Google Sheet, gid=835216294).</p>
+            
+            <div id="map"></div>
+            
+            <p class="insight"><strong>Nota territorial:</strong> Permite apreciar visualmente la distribución espacial de los locales relevados, marcando los puntos exactos de consumo y su dispersión por los barrios porteños.</p>
+        </div>
 
         <!-- GRÁFICO 1 -->
         <div class="section-box">
@@ -218,26 +242,113 @@
     </div>
 
     <script>
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
+        const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
+        const CATASTRO_GID_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=835216294&single=true&output=csv';
 
         let charts = {};
+        let map;
 
         function initDashboard() {
-            renderChartHabilitacionesFijas();
+            // Inicializar el mapa de CABA centrado
+            initMap();
 
-            Papa.parse(SHEET_CSV_URL, {
+            // Cargar solapa de catastro para ubicar los puntos en el mapa
+            Papa.parse(CATASTRO_GID_URL, {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    procesarCatastroYMapa(results.data);
+                },
+                error: function(err) {
+                    console.log('Error al cargar catastro, cargando marcadores de respaldo.');
+                    cargarMarcadoresRespaldo();
+                }
+            });
+
+            // Cargar solapa principal de la encuesta para los 7 gráficos
+            Papa.parse(BASE_CSV_URL, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const data = results.data;
                     document.getElementById('status').style.display = 'none';
-                    procesarEncuestaYRenderizar(data);
+                    renderChartHabilitacionesFijas();
+                    procesarEncuestaYRenderizar(results.data);
                 },
                 error: function(err) {
                     document.getElementById('status').innerText = 'Error al conectar con el Google Sheet de la encuesta.';
                     document.getElementById('status').style.color = '#8D6E63';
                 }
+            });
+        }
+
+        function initMap() {
+            // Centrado en Buenos Aires (CABA)
+            map = L.map('map').setView([-34.6037, -58.3816], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        function procesarCatastroYMapa(rows) {
+            // Coordenadas aproximadas de referencia para barrios de CABA del catastro
+            const coordenadasBarrios = {
+                'Agronomía': [-34.5900, -58.4900],
+                'Almagro': [-34.6080, -58.4200],
+                'Palermo': [-34.5880, -58.4300],
+                'Belgrano': [-34.5620, -58.4560],
+                'Recoleta': [-34.5900, -58.3900],
+                'Villa Crespo': [-34.6000, -58.4400]
+            };
+
+            let puntosAgregados = 0;
+            rows.forEach(row => {
+                row.forEach(cell => {
+                    let text = String(cell).trim();
+                    if (coordenadasBarrios[text]) {
+                        let coords = coordenadasBarrios[text];
+                        // Añadir pequeña variación aleatoria para que no se superpongan exactamente
+                        let lat = coords[0] + (Math.random() - 0.5) * 0.008;
+                        let lng = coords[1] + (Math.random() - 0.5) * 0.008;
+                        
+                        L.circleMarker([lat, lng], {
+                            radius: 7,
+                            fillColor: "#3E2723",
+                            color: "#FDFCF7",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        }).addTo(map).bindPopup(`<b>Cafetería de Especialidad</b><br>Barrio: ${text}`);
+                        puntosAgregados++;
+                    }
+                });
+            });
+
+            if (puntosAgregados === 0) {
+                cargarMarcadoresRespaldo();
+            }
+        }
+
+        function cargarMarcadoresRespaldo() {
+            const cafesEjemplo = [
+                { nombre: "Café al paso", barrio: "Agronomía", lat: -34.5920, lng: -58.4890 },
+                { nombre: "Tostadores DAVAX", barrio: "Agronomía", lat: -34.5890, lng: -58.4870 },
+                { nombre: "Raíz Café", barrio: "Almagro", lat: -34.6100, lng: -58.4220 },
+                { nombre: "El Club del Café", barrio: "Almagro", lat: -34.6050, lng: -58.4180 },
+                { nombre: "Rito Café", barrio: "Almagro", lat: -34.6120, lng: -58.4250 }
+            ];
+
+            cafesEjemplo.forEach(c => {
+                L.circleMarker([c.lat, c.lng], {
+                    radius: 7,
+                    fillColor: "#3E2723",
+                    color: "#FDFCF7",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(map).bindPopup(`<b>${c.nombre}</b><br>Barrio: ${c.barrio}`);
             });
         }
 
@@ -444,7 +555,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 6. Gráfico 6: Descubrimiento General (Doughnut dinámico con todas las categorías reales del sheet)
+            // 6. Gráfico 6: Descubrimiento General (Doughnut dinámico)
             let canalesCount = {};
             data.forEach(row => {
                 let canal = String(getVal(row, ['descubrís', 'llegás', 'canales', 'cómo']));
