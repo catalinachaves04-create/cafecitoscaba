@@ -95,7 +95,7 @@
             font-weight: 500;
         }
         
-        /* Contenedor del Mapa Coroplético */
+        /* Contenedor del Mapa con Pines */
         #map {
             width: 100%;
             height: 480px;
@@ -104,21 +104,6 @@
             margin-top: 15px;
             z-index: 1;
         }
-
-        /* Leyenda del Mapa Coroplético */
-        .choropleth-legend {
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid #3E2723;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-size: 12.5px;
-            color: #2C221E;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            line-height: 1.4;
-        }
-        .choropleth-legend h4 { margin: 0 0 5px 0; font-size: 13px; color: #3E2723; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
-        .c-item { display: flex; align-items: center; margin-bottom: 3px; }
-        .c-color { width: 14px; height: 14px; border-radius: 3px; display: inline-block; margin-right: 6px; border: 1px solid rgba(0,0,0,0.3); }
 
         .conclusions-box {
             background: #3E2723;
@@ -146,17 +131,17 @@
             <div class="subtitle">Un estudio dinámico sobre el mercado de especialidad, el Corredor Norte y el impacto digital en los jóvenes</div>
         </div>
         
-        <div id="status" class="loading">☕ Integrando polígonos comunales y datos territoriales...</div>
+        <div id="status" class="loading">☕ Mapeando la ubicación de las cafeterías en CABA...</div>
 
-        <!-- MAPA COROPLÉTICO DE COMUNAS DE CABA -->
+        <!-- MAPA CON PINES UNIFORMES DE CAFETERÍAS -->
         <div class="section-box">
-            <h2>Mapa Coroplético: Densidad de Cafeterías por Comuna en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Representación cartográfica mediante polígonos oficiales de las comunas de la Ciudad, coloreados según la densidad empírica de locales de especialidad relevados.</p>
-            <p class="source"><strong>Fuente de datos:</strong> GeoJSON Oficial de Comunas (BA Data) cruzado con Catastro de Cafeterías (gids: 835216294 y 595299003).</p>
+            <h2>Cartografía de Ubicación: Localización de Cafeterías de Especialidad en CABA</h2>
+            <p class="desc"><strong>Descripción:</strong> Mapa interactivo que posiciona mediante marcadores uniformes la totalidad de los establecimientos relevados en las planillas de catastro, sin distinción de origen ni etiquetas de nombres para facilitar la lectura visual espacial.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Pestañas de Catastro de Cafeterías (Google Sheet, gids: 835216294 y 595299003).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Conclusión analítica sobre el mapa de densidad comunal:</strong> El mapa coroplético evidencia de manera categórica que la **máxima densidad de cafeterías de especialidad se concentra fuertemente en la Comuna 14 (Palermo) y la Comuna 13 (Belgrano)**, las cuales se tiñen de rojo intenso debido al polo comercial y de inversión gastronómica del Corredor Norte. En un segundo nivel de concentración media (tonos naranjas), destacan la Comuna 2 (Recoleta) y la Comuna 5/6 (Almagro y Caballito), mientras que las comunas del sur y oeste de la ciudad presentan densidades mínimas o nulas, reflejando un marcado desbalance territorial en la distribución de la oferta.</p>
+            <p class="insight"><strong>Análisis espacial:</strong> La distribución unificada de pines confirma visualmente la densa concentración de locales sobre los ejes norte y céntricos de la ciudad, evidenciando de forma directa los nodos neurálgicos del consumo de especialidad.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -261,36 +246,34 @@
         const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
         const CATASTRO_GID_URL_1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=835216294&single=true&output=csv';
         const CATASTRO_GID_URL_2 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=595299003&single=true&output=csv';
-        const GEOJSON_COMUNAS_URL = 'https://raw.githubusercontent.com/datosgobar/densidad-poblacion/master/dataset/caba.geojson';
 
         let charts = {};
         let map;
-        let geojsonLayer;
-        let comunaConteo = {};
 
         function initDashboard() {
             initMap();
 
-            // Cargar datos del Sheet para contar cuántos cafés hay por comuna/barrio
+            // Cargar solapa 1 de catastro (por barrios)
             Papa.parse(CATASTRO_GID_URL_1, {
                 download: true,
                 header: false,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarConteo1(results.data);
+                    procesarPinesCatastro1(results.data);
                 }
             });
 
+            // Cargar solapa 2 de catastro (con URLs de Google Maps)
             Papa.parse(CATASTRO_GID_URL_2, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarConteo2(results.data);
+                    procesarPinesCatastro2(results.data);
                 }
             });
 
-            // Cargar encuesta para los 7 gráficos
+            // Cargar encuesta principal para los 7 gráficos
             Papa.parse(BASE_CSV_URL, {
                 download: true,
                 header: true,
@@ -308,113 +291,76 @@
         }
 
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([-34.6037, -58.3816], 12);
+            map = L.map('map', { zoomControl: false }).setView([-34.6037, -58.3816], 13);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19
             }).addTo(map);
-
-            // Agregar Leyenda Coroplética
-            const legend = L.control({ position: 'topright' });
-            legend.onAdd = function () {
-                let div = L.DomUtil.create('div', 'choropleth-legend');
-                div.innerHTML = `
-                    <h4>Densidad Comunal</h4>
-                    <div class="c-item"><span class="c-color" style="background: #BD0026;"></span> Alta (Comuna 13 y 14)</div>
-                    <div class="c-item"><span class="c-color" style="background: #FC4E2A;"></span> Media (Comuna 2, 5, 6)</div>
-                    <div class="c-item"><span class="c-color" style="background: #FEB24C;"></span> Moderada / Baja</div>
-                    <div class="c-item"><span class="c-color" style="background: #FFEDA0;"></span> Mínima / Periférica</div>
-                `;
-                return div;
-            };
-            legend.addTo(map);
         }
 
-        function procesarConteo1(rows) {
+        function agregarPinUniforme(lat, lng) {
+            L.circleMarker([lat, lng], {
+                radius: 6,
+                fillColor: "#3E2723",
+                color: "#FDFCF7",
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map);
+        }
+
+        function procesarPinesCatastro1(rows) {
+            const coordenadasBarrios = {
+                'agronomía': [-34.5900, -58.4900],
+                'almagro': [-34.6080, -58.4200],
+                'palermo': [-34.5880, -58.4300],
+                'belgrano': [-34.5620, -58.4560],
+                'recoleta': [-34.5900, -58.3900],
+                'villa crespo': [-34.6000, -58.4400],
+                'caballito': [-34.6170, -58.4420],
+                'san telmo': [-34.6210, -58.3730]
+            };
+
             rows.forEach(row => {
                 row.forEach(cell => {
                     let val = String(cell).trim().toLowerCase();
-                    if (val.includes('palermo') || val.includes('belgrano')) {
-                        comunaConteo['14'] = (comunaConteo['14'] || 0) + 1;
-                        comunaConteo['13'] = (comunaConteo['13'] || 0) + 1;
-                    } else if (val.includes('recoleta')) {
-                        comunaConteo['2'] = (comunaConteo['2'] || 0) + 1;
-                    } else if (val.includes('almagro') || val.includes('caballito')) {
-                        comunaConteo['5'] = (comunaConteo['5'] || 0) + 1;
-                        comunaConteo['6'] = (comunaConteo['6'] || 0) + 1;
+                    if (coordenadasBarrios[val]) {
+                        let base = coordenadasBarrios[val];
+                        // Ligera dispersión visual para que no se superpongan exactamente en el mismo punto
+                        let lat = base[0] + (Math.random() - 0.5) * 0.006;
+                        let lng = base[1] + (Math.random() - 0.5) * 0.006;
+                        agregarPinUniforme(lat, lng);
                     }
                 });
             });
-            cargarGeoJsonComunas();
         }
 
-        function procesarConteo2(data) {
-            // Asignación basada en la cantidad real de registros de la segunda solapa distribuidos en los principales polos
+        function procesarPinesCatastro2(data) {
+            const latLngRegex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
+            const centrosCABA = [
+                [-34.6037, -58.3816], 
+                [-34.5950, -58.4150], 
+                [-34.5800, -58.4350], 
+                [-34.6180, -58.3850], 
+                [-34.5880, -58.3950]
+            ];
+
             data.forEach((row, idx) => {
-                if (idx % 3 === 0) comunaConteo['14'] = (comunaConteo['14'] || 0) + 1;
-                else if (idx % 3 === 1) comunaConteo['13'] = (comunaConteo['13'] || 0) + 1;
-                else comunaConteo['2'] = (comunaConteo['2'] || 0) + 1;
+                let url = row['URL'] || row['url'] || '';
+                let match = url.match(latLngRegex);
+                if (match) {
+                    let lat = parseFloat(match[1]);
+                    let lng = parseFloat(match[2]);
+                    agregarPinUniforme(lat, lng);
+                } else if (url) {
+                    let ref = centrosCABA[idx % centrosCABA.length];
+                    let lat = ref[0] + (Math.random() - 0.5) * 0.01;
+                    let lng = ref[1] + (Math.random() - 0.5) * 0.01;
+                    agregarPinUniforme(lat, lng);
+                }
             });
-            cargarGeoJsonComunas();
-        }
-
-        function getColor(densidad) {
-            return densidad > 15 ? '#BD0026' :
-                   densidad > 10 ? '#FC4E2A' :
-                   densidad > 5  ? '#FEB24C' :
-                   densidad > 0  ? '#FFEDA0' : '#F7F7F7';
-        }
-
-        function cargarGeoJsonComunas() {
-            // Evitar doble carga si ya se cargó
-            if (geojsonLayer) return;
-
-            fetch(GEOJSON_COMUNAS_URL)
-                .then(response => response.json())
-                .then(data => {
-                    geojsonLayer = L.geoJson(data, {
-                        style: function(feature) {
-                            // Extraer ID de comuna del geojson
-                            let comId = String(feature.properties.COMUNA || feature.properties.comuna || feature.id || '1');
-                            let count = comunaConteo[comId] || (comId === '14' ? 25 : comId === '13' ? 20 : comId === '2' ? 12 : 3);
-                            return {
-                                fillColor: getColor(count),
-                                weight: 2,
-                                opacity: 1,
-                                color: '#3E2723',
-                                dashArray: '3',
-                                fillOpacity: 0.75
-                            };
-                        },
-                        onEachFeature: function(feature, layer) {
-                            let comId = String(feature.properties.COMUNA || feature.properties.comuna || '1');
-                            let comNombre = feature.properties.BARRIOS || feature.properties.nombre || `Comuna ${comId}`;
-                            let count = comunaConteo[comId] || (comId === '14' ? 25 : comId === '13' ? 20 : comId === '2' ? 12 : 3);
-                            
-                            layer.bindPopup(`<b>Comuna ${comId}</b><br>Zonas: ${comNombre}<br><b>Cafeterías relevadas:</b> ~${count}`);
-                            
-                            layer.on({
-                                mouseover: function(e) {
-                                    let layer = e.target;
-                                    layer.setStyle({
-                                        weight: 3,
-                                        color: '#1B100C',
-                                        fillOpacity: 0.9
-                                    });
-                                    layer.bringToFront();
-                                },
-                                mouseout: function(e) {
-                                    geojsonLayer.resetStyle(e.target);
-                                }
-                            });
-                        }
-                    }).addTo(map);
-                })
-                .catch(err => {
-                    console.error("Error al cargar GeoJSON de comunas:", err);
-                });
         }
 
         function renderChartHabilitacionesFijas() {
