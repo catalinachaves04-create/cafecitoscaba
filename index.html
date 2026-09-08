@@ -135,12 +135,12 @@
         <!-- MAPA INTERACTIVO DE CABA -->
         <div class="section-box">
             <h2>Mapa Cartográfico: Ubicación de Cafeterías de Especialidad en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva de todos los locales relevados en tu catastro (con sus respectivos nombres, barrios y direcciones exactas).</p>
-            <p class="source"><strong>Fuente de datos:</strong> Pestaña de Catastro de Cafeterías (Google Sheet, gid=835216294).</p>
+            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva con las ubicaciones y enlaces oficiales a Google Maps de todas las cafeterías relevadas en el catastro.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Pestañas de Catastro de Cafeterías (Google Sheet, gids: 835216294 y 595299003).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Nota territorial:</strong> Cada punto representa una cafetería de la lista oficial, permitiendo explorar geográficamente su distribución por los barrios de la Ciudad.</p>
+            <p class="insight"><strong>Nota territorial:</strong> Cada marcador interactivo permite consultar el nombre del local y acceder directamente a su ubicación en Google Maps.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -243,7 +243,8 @@
 
     <script>
         const BASE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?output=csv';
-        const CATASTRO_GID_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=835216294&single=true&output=csv';
+        const CATASTRO_GID_URL_1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=835216294&single=true&output=csv';
+        const CATASTRO_GID_URL_2 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-VkTgxtWOR5iHz1SqoTR6NPYBXYbP44J1I_ko0eRA3OvrRdQZie3HAJGs-pw1UIlA8WaN93MXg4Zb/pub?gid=595299003&single=true&output=csv';
 
         let charts = {};
         let map;
@@ -251,17 +252,23 @@
         function initDashboard() {
             initMap();
 
-            // Cargar solapa de catastro para extraer todas las cafeterías, barrios y direcciones
-            Papa.parse(CATASTRO_GID_URL, {
+            // Cargar y procesar primera solapa de catastro
+            Papa.parse(CATASTRO_GID_URL_1, {
                 download: true,
                 header: false,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastroYMapaCompleto(results.data);
-                },
-                error: function(err) {
-                    console.log('Error al cargar catastro, usando respaldo.');
-                    cargarMarcadoresRespaldo();
+                    procesarCatastro1(results.data);
+                }
+            });
+
+            // Cargar y procesar segunda solapa de catastro (con nombres y URLs de Google Maps)
+            Papa.parse(CATASTRO_GID_URL_2, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    procesarCatastro2(results.data);
                 }
             });
 
@@ -290,8 +297,7 @@
             }).addTo(map);
         }
 
-        function procesarCatastroYMapaCompleto(rows) {
-            // Coordenadas base de referencia por barrio en CABA
+        function procesarCatastro1(rows) {
             const coordenadasBarrios = {
                 'agronomía': [-34.5900, -58.4900],
                 'almagro': [-34.6080, -58.4200],
@@ -301,22 +307,16 @@
                 'villa crespo': [-34.6000, -58.4400]
             };
 
-            let cafetariasEncontradas = 0;
-
             rows.forEach(row => {
-                // Analizamos celdas consecutivas para identificar patrones [Barrio, Nombre, Dirección]
                 for (let i = 0; i < row.length; i++) {
                     let cellVal = String(row[i]).trim();
                     let cellLower = cellVal.toLowerCase();
-
-                    // Si la celda coincide con un barrio conocido, buscamos el nombre y dirección en las celdas adyacentes
                     if (coordenadasBarrios[cellLower]) {
                         let barrio = cellVal;
                         let nombre = (i + 1 < row.length) ? String(row[i + 1]).trim() : 'Café de Especialidad';
-                        let direccion = (i + 2 < row.length) ? String(row[i + 2]).trim() : 'Dirección no especificada';
+                        let direccion = (i + 2 < row.length) ? String(row[i + 2]).trim() : '';
 
                         let baseCoords = coordenadasBarrios[cellLower];
-                        // Desplazamiento aleatorio leve para que no se solapen si están en el mismo barrio
                         let lat = baseCoords[0] + (Math.random() - 0.5) * 0.009;
                         let lng = baseCoords[1] + (Math.random() - 0.5) * 0.009;
 
@@ -327,38 +327,42 @@
                             weight: 2,
                             opacity: 1,
                             fillOpacity: 0.9
-                        }).addTo(map).bindPopup(`<b>${nombre}</b><br>Barrio: ${barrio}<br>Dir: ${direccion}`);
-                        
-                        cafetariasEncontradas++;
+                        }).addTo(map).bindPopup(`<b>${nombre}</b><br>Barrio: ${barrio}<br>${direccion}`);
                     }
                 }
             });
-
-            if (cafetariasEncontradas === 0) {
-                cargarMarcadoresRespaldo();
-            }
         }
 
-        function cargarMarcadoresRespaldo() {
-            const cafesEjemplo = [
-                { nombre: "Café al paso", barrio: "Agronomía", dir: "Av. San Martín 4500", lat: -34.5920, lng: -58.4890 },
-                { nombre: "DAVAX Tostadores", barrio: "Agronomía", dir: "Batalla del Pari 887", lat: -34.5890, lng: -58.4870 },
-                { nombre: "Raíz Café", barrio: "Almagro", dir: "Av. Corrientes 3900", lat: -34.6100, lng: -58.4220 },
-                { nombre: "El Club del Café", barrio: "Almagro", dir: "Av. Angel Gallardo 100", lat: -34.6050, lng: -58.4180 },
-                { nombre: "Rito Café", barrio: "Almagro", dir: "Pringles 1200", lat: -34.6120, lng: -58.4250 },
-                { nombre: "El Despacho", barrio: "Almagro", dir: "Bulnes 900", lat: -34.6030, lng: -58.4200 },
-                { nombre: "Cronos Café", barrio: "Almagro", dir: "Medrano 400", lat: -34.6070, lng: -58.4280 }
+        function procesarCatastro2(data) {
+            // Coordenadas generales de referencia en CABA para distribuir los nuevos cafés de la lista
+            const zonasCABA = [
+                [-34.6037, -58.3816], // Centro
+                [-34.5980, -58.4200], // Palermo / Almagro
+                [-34.5750, -58.4350], // Palermo Norte / Belgrano
+                [-34.6150, -58.3950], // San Telmo / Monserrat
+                [-34.5900, -58.4050]  // Recoleta
             ];
 
-            cafesEjemplo.forEach(c => {
-                L.circleMarker([c.lat, c.lng], {
-                    radius: 7,
-                    fillColor: "#3E2723",
-                    color: "#FDFCF7",
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                }).addTo(map).bindPopup(`<b>${c.nombre}</b><br>Barrio: ${c.barrio}<br>Dir: ${c.dir}`);
+            data.forEach((row, idx) => {
+                let titulo = row['Título'] || row['Titulo'] || '';
+                let url = row['URL'] || row['url'] || '#';
+                
+                if (titulo) {
+                    let refCoords = zonasCABA[idx % zonasCABA.length];
+                    let lat = refCoords[0] + (Math.random() - 0.5) * 0.012;
+                    let lng = refCoords[1] + (Math.random() - 0.5) * 0.012;
+
+                    let popupContent = `<b>${titulo}</b><br><a href="${url}" target="_blank" style="color: #8D6E63; font-weight: bold;">Ver en Google Maps ↗</a>`;
+
+                    L.circleMarker([lat, lng], {
+                        radius: 8,
+                        fillColor: "#708238", // Color distintivo para esta solapa
+                        color: "#FDFCF7",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(map).bindPopup(popupContent);
+                }
             });
         }
 
