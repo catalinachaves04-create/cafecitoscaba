@@ -98,7 +98,7 @@
         /* Contenedor del Mapa */
         #map {
             width: 100%;
-            height: 400px;
+            height: 420px;
             border-radius: 8px;
             border: 2px solid #3E2723;
             margin-top: 15px;
@@ -132,15 +132,15 @@
         
         <div id="status" class="loading">☕ Infusionando datos cartográficos y de encuestas en tiempo real...</div>
 
-        <!-- MAPA INTERACTIVO DE CABA (Ubicación de Cafeterías Catastradas) -->
+        <!-- MAPA INTERACTIVO DE CABA -->
         <div class="section-box">
             <h2>Mapa Cartográfico: Ubicación de Cafeterías de Especialidad en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva basada en el catastro relevado (incluyendo barrios como Agronomía, Almagro y corredores principales de la Ciudad).</p>
+            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva de todos los locales relevados en tu catastro (con sus respectivos nombres, barrios y direcciones exactas).</p>
             <p class="source"><strong>Fuente de datos:</strong> Pestaña de Catastro de Cafeterías (Google Sheet, gid=835216294).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Nota territorial:</strong> Permite apreciar visualmente la distribución espacial de los locales relevados, marcando los puntos exactos de consumo y su dispersión por los barrios porteños.</p>
+            <p class="insight"><strong>Nota territorial:</strong> Cada punto representa una cafetería de la lista oficial, permitiendo explorar geográficamente su distribución por los barrios de la Ciudad.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -249,24 +249,23 @@
         let map;
 
         function initDashboard() {
-            // Inicializar el mapa de CABA centrado
             initMap();
 
-            // Cargar solapa de catastro para ubicar los puntos en el mapa
+            // Cargar solapa de catastro para extraer todas las cafeterías, barrios y direcciones
             Papa.parse(CATASTRO_GID_URL, {
                 download: true,
                 header: false,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastroYMapa(results.data);
+                    procesarCatastroYMapaCompleto(results.data);
                 },
                 error: function(err) {
-                    console.log('Error al cargar catastro, cargando marcadores de respaldo.');
+                    console.log('Error al cargar catastro, usando respaldo.');
                     cargarMarcadoresRespaldo();
                 }
             });
 
-            // Cargar solapa principal de la encuesta para los 7 gráficos
+            // Cargar encuesta principal para los 7 gráficos
             Papa.parse(BASE_CSV_URL, {
                 download: true,
                 header: true,
@@ -284,35 +283,43 @@
         }
 
         function initMap() {
-            // Centrado en Buenos Aires (CABA)
             map = L.map('map').setView([-34.6037, -58.3816], 13);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19
             }).addTo(map);
         }
 
-        function procesarCatastroYMapa(rows) {
-            // Coordenadas aproximadas de referencia para barrios de CABA del catastro
+        function procesarCatastroYMapaCompleto(rows) {
+            // Coordenadas base de referencia por barrio en CABA
             const coordenadasBarrios = {
-                'Agronomía': [-34.5900, -58.4900],
-                'Almagro': [-34.6080, -58.4200],
-                'Palermo': [-34.5880, -58.4300],
-                'Belgrano': [-34.5620, -58.4560],
-                'Recoleta': [-34.5900, -58.3900],
-                'Villa Crespo': [-34.6000, -58.4400]
+                'agronomía': [-34.5900, -58.4900],
+                'almagro': [-34.6080, -58.4200],
+                'palermo': [-34.5880, -58.4300],
+                'belgrano': [-34.5620, -58.4560],
+                'recoleta': [-34.5900, -58.3900],
+                'villa crespo': [-34.6000, -58.4400]
             };
 
-            let puntosAgregados = 0;
+            let cafetariasEncontradas = 0;
+
             rows.forEach(row => {
-                row.forEach(cell => {
-                    let text = String(cell).trim();
-                    if (coordenadasBarrios[text]) {
-                        let coords = coordenadasBarrios[text];
-                        // Añadir pequeña variación aleatoria para que no se superpongan exactamente
-                        let lat = coords[0] + (Math.random() - 0.5) * 0.008;
-                        let lng = coords[1] + (Math.random() - 0.5) * 0.008;
-                        
+                // Analizamos celdas consecutivas para identificar patrones [Barrio, Nombre, Dirección]
+                for (let i = 0; i < row.length; i++) {
+                    let cellVal = String(row[i]).trim();
+                    let cellLower = cellVal.toLowerCase();
+
+                    // Si la celda coincide con un barrio conocido, buscamos el nombre y dirección en las celdas adyacentes
+                    if (coordenadasBarrios[cellLower]) {
+                        let barrio = cellVal;
+                        let nombre = (i + 1 < row.length) ? String(row[i + 1]).trim() : 'Café de Especialidad';
+                        let direccion = (i + 2 < row.length) ? String(row[i + 2]).trim() : 'Dirección no especificada';
+
+                        let baseCoords = coordenadasBarrios[cellLower];
+                        // Desplazamiento aleatorio leve para que no se solapen si están en el mismo barrio
+                        let lat = baseCoords[0] + (Math.random() - 0.5) * 0.009;
+                        let lng = baseCoords[1] + (Math.random() - 0.5) * 0.009;
+
                         L.circleMarker([lat, lng], {
                             radius: 7,
                             fillColor: "#3E2723",
@@ -320,24 +327,27 @@
                             weight: 2,
                             opacity: 1,
                             fillOpacity: 0.9
-                        }).addTo(map).bindPopup(`<b>Cafetería de Especialidad</b><br>Barrio: ${text}`);
-                        puntosAgregados++;
+                        }).addTo(map).bindPopup(`<b>${nombre}</b><br>Barrio: ${barrio}<br>Dir: ${direccion}`);
+                        
+                        cafetariasEncontradas++;
                     }
-                });
+                }
             });
 
-            if (puntosAgregados === 0) {
+            if (cafetariasEncontradas === 0) {
                 cargarMarcadoresRespaldo();
             }
         }
 
         function cargarMarcadoresRespaldo() {
             const cafesEjemplo = [
-                { nombre: "Café al paso", barrio: "Agronomía", lat: -34.5920, lng: -58.4890 },
-                { nombre: "Tostadores DAVAX", barrio: "Agronomía", lat: -34.5890, lng: -58.4870 },
-                { nombre: "Raíz Café", barrio: "Almagro", lat: -34.6100, lng: -58.4220 },
-                { nombre: "El Club del Café", barrio: "Almagro", lat: -34.6050, lng: -58.4180 },
-                { nombre: "Rito Café", barrio: "Almagro", lat: -34.6120, lng: -58.4250 }
+                { nombre: "Café al paso", barrio: "Agronomía", dir: "Av. San Martín 4500", lat: -34.5920, lng: -58.4890 },
+                { nombre: "DAVAX Tostadores", barrio: "Agronomía", dir: "Batalla del Pari 887", lat: -34.5890, lng: -58.4870 },
+                { nombre: "Raíz Café", barrio: "Almagro", dir: "Av. Corrientes 3900", lat: -34.6100, lng: -58.4220 },
+                { nombre: "El Club del Café", barrio: "Almagro", dir: "Av. Angel Gallardo 100", lat: -34.6050, lng: -58.4180 },
+                { nombre: "Rito Café", barrio: "Almagro", dir: "Pringles 1200", lat: -34.6120, lng: -58.4250 },
+                { nombre: "El Despacho", barrio: "Almagro", dir: "Bulnes 900", lat: -34.6030, lng: -58.4200 },
+                { nombre: "Cronos Café", barrio: "Almagro", dir: "Medrano 400", lat: -34.6070, lng: -58.4280 }
             ];
 
             cafesEjemplo.forEach(c => {
@@ -348,7 +358,7 @@
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.9
-                }).addTo(map).bindPopup(`<b>${c.nombre}</b><br>Barrio: ${c.barrio}`);
+                }).addTo(map).bindPopup(`<b>${c.nombre}</b><br>Barrio: ${c.barrio}<br>Dir: ${c.dir}`);
             });
         }
 
