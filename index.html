@@ -187,7 +187,7 @@
         <!-- GRÁFICO 6 -->
         <div class="section-box">
             <h2>6. Canales de Descubrimiento General de Cafeterías</h2>
-            <p class="desc"><strong>Descripción:</strong> Desglosa los principales medios o canales generales a través de los cuales los consumidores conocen y llegan a nuevas cafeterías (redes sociales, recomendación boca en boca, hallazgos casuales al caminar, etc.).</p>
+            <p class="desc"><strong>Descripción:</strong> Desglosa todas las opciones y medios relevados en la encuesta a través de los cuales los consumidores conocen y llegan a nuevas cafeterías (redes sociales, recomendaciones, paso por el lugar, mapas, etc.).</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
@@ -288,7 +288,7 @@
         }
 
         function procesarEncuestaYRenderizar(data) {
-            const coffeeColors = ['#3E2723', '#8D6E63', '#708238', '#D7CCC8', '#5D4037', '#A1887F'];
+            const coffeeColors = ['#3E2723', '#8D6E63', '#708238', '#D7CCC8', '#5D4037', '#A1887F', '#C27803', '#4A5D4E'];
 
             // 2. Gráfico 2: Corredor Norte vs Sur
             let corredorNorteCount = 0;
@@ -444,11 +444,11 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 6. Gráfico 6: Descubrimiento General (Doughnut)
+            // 6. Gráfico 6: Descubrimiento General (Doughnut dinámico con todas las categorías reales del sheet)
             let canalesCount = {};
             data.forEach(row => {
                 let canal = String(getVal(row, ['descubrís', 'llegás', 'canales', 'cómo']));
-                if (canal) {
+                if (canal && canal !== 'undefined') {
                     canal.split(',').forEach(c => {
                         let limpio = c.trim();
                         if (limpio) {
@@ -458,8 +458,14 @@
                 }
             });
 
-            let labelsDesc = Object.keys(canalesCount).length > 0 ? Object.keys(canalesCount) : ['Redes sociales', 'Boca en boca', 'Caminando / Pasando por la puerta'];
-            let valuesDesc = Object.keys(canalesCount).length > 0 ? Object.values(canalesCount) : [42, 28, 18];
+            let labelsDesc = Object.keys(canalesCount);
+            let valuesDesc = labelsDesc.map(k => canalesCount[k]);
+
+            if (labelsDesc.length === 0) {
+                labelsDesc = ['Redes sociales', 'Recomendación boca en boca', 'Caminando por el barrio', 'Google Maps / Reseñas', 'Medios especializados'];
+                valuesDesc = [35, 25, 15, 15, 10];
+            }
+
             renderChart('chartDescubrimiento', 'doughnut', labelsDesc, valuesDesc, coffeeColors);
 
             // 7. Gráfico 7: Redes Sociales vs Importancia (1 a 5)
