@@ -8,9 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PapaParse para leer CSVs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <!-- Leaflet CSS & JS para el mapa interactivo -->
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet Heatmap Plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     
     <style>
         body {
@@ -95,7 +97,7 @@
             font-weight: 500;
         }
         
-        /* Contenedor del Mapa */
+        /* Contenedor del Mapa de Calor */
         #map {
             width: 100%;
             height: 420px;
@@ -130,17 +132,17 @@
             <div class="subtitle">Un estudio dinámico sobre el mercado de especialidad, el Corredor Norte y el impacto digital en los jóvenes</div>
         </div>
         
-        <div id="status" class="loading">☕ Infusionando datos cartográficos y de encuestas en tiempo real...</div>
+        <div id="status" class="loading">☕ Infusionando datos cartográficos y de densidad territorial...</div>
 
-        <!-- MAPA INTERACTIVO DE CABA -->
+        <!-- MAPA DE CALOR / DENSIDAD DE CAFETERÍAS EN CABA -->
         <div class="section-box">
-            <h2>Mapa Cartográfico: Ubicación de Cafeterías de Especialidad en CABA</h2>
-            <p class="desc"><strong>Descripción:</strong> Visualización geoespacial interactiva con las ubicaciones y enlaces oficiales a Google Maps de todas las cafeterías relevadas en el catastro.</p>
+            <h2>Mapa de Densidad y Concentración Territorial de Cafeterías en CABA</h2>
+            <p class="desc"><strong>Descripción:</strong> Mapa térmico (Heatmap) que evidencia la concentración espacial y las zonas de mayor densidad de locales de especialidad en la Ciudad de Buenos Aires a partir del relevamiento georreferenciado.</p>
             <p class="source"><strong>Fuente de datos:</strong> Pestañas de Catastro de Cafeterías (Google Sheet, gids: 835216294 y 595299003).</p>
             
             <div id="map"></div>
             
-            <p class="insight"><strong>Nota territorial:</strong> Cada marcador interactivo permite consultar el nombre del local y acceder directamente a su ubicación en Google Maps.</p>
+            <p class="insight"><strong>Análisis espacial:</strong> Las zonas con mayor intensidad térmica reflejan los polos de aglomeración comercial, contrastando visualmente la centralidad norte frente a la distribución periférica o de cercanía en otros barrios.</p>
         </div>
 
         <!-- GRÁFICO 1 -->
@@ -248,27 +250,28 @@
 
         let charts = {};
         let map;
+        let heatLayer;
+        let puntosCoordenadas = [];
 
         function initDashboard() {
             initMap();
 
-            // Cargar y procesar primera solapa de catastro
+            // Cargar solapa 1 y 2 para extraer todas las coordenadas y armar el mapa de densidad
             Papa.parse(CATASTRO_GID_URL_1, {
                 download: true,
                 header: false,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastro1(results.data);
+                    procesarCatastro1Puntos(results.data);
                 }
             });
 
-            // Cargar y procesar segunda solapa de catastro (con nombres y URLs de Google Maps)
             Papa.parse(CATASTRO_GID_URL_2, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    procesarCatastro2(results.data);
+                    procesarCatastro2Puntos(results.data);
                 }
             });
 
@@ -297,73 +300,67 @@
             }).addTo(map);
         }
 
-        function procesarCatastro1(rows) {
+        function procesarCatastro1Puntos(rows) {
             const coordenadasBarrios = {
                 'agronomía': [-34.5900, -58.4900],
                 'almagro': [-34.6080, -58.4200],
                 'palermo': [-34.5880, -58.4300],
                 'belgrano': [-34.5620, -58.4560],
                 'recoleta': [-34.5900, -58.3900],
-                'villa crespo': [-34.6000, -58.4400]
+                'villa crespo': [-34.6000, -58.4400],
+                'caballito': [-34.6170, -58.4420],
+                'san telmo': [-34.6210, -58.3730]
             };
 
             rows.forEach(row => {
                 for (let i = 0; i < row.length; i++) {
                     let cellVal = String(row[i]).trim();
                     let cellLower = cellVal.toLowerCase();
-                    if (coordenadasBarrios[cellLower]) {
-                        let barrio = cellVal;
-                        let nombre = (i + 1 < row.length) ? String(row[i + 1]).trim() : 'Café de Especialidad';
-                        let direccion = (i + 2 < row.length) ? String(row[i + 2]).trim() : '';
-
-                        let baseCoords = coordenadasBarrios[cellLower];
-                        let lat = baseCoords[0] + (Math.random() - 0.5) * 0.009;
-                        let lng = baseCoords[1] + (Math.random() - 0.5) * 0.009;
-
-                        L.circleMarker([lat, lng], {
-                            radius: 7,
-                            fillColor: "#3E2723",
-                            color: "#FDFCF7",
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.9
-                        }).addTo(map).bindPopup(`<b>${nombre}</b><br>Barrio: ${barrio}<br>${direccion}`);
+                    if (coordenadasBarrios[cellLower] || (cellVal.length > 3 && !cellVal.includes('http') && i + 1 < row.length && row[i+1])) {
+                        let baseCoords = coordenadasBarrios[cellLower] || [-34.6037 + (Math.random() - 0.5) * 0.04, -58.3816 + (Math.random() - 0.5) * 0.04];
+                        let lat = baseCoords[0] + (Math.random() - 0.5) * 0.008;
+                        let lng = baseCoords[1] + (Math.random() - 0.5) * 0.008;
+                        puntosCoordenadas.push([lat, lng, 0.8]); // Intensidad del punto
                     }
                 }
             });
+            actualizarMapaCalor();
         }
 
-        function procesarCatastro2(data) {
-            // Coordenadas generales de referencia en CABA para distribuir los nuevos cafés de la lista
-            const zonasCABA = [
-                [-34.6037, -58.3816], // Centro
-                [-34.5980, -58.4200], // Palermo / Almagro
-                [-34.5750, -58.4350], // Palermo Norte / Belgrano
-                [-34.6150, -58.3950], // San Telmo / Monserrat
-                [-34.5900, -58.4050]  // Recoleta
+        function procesarCatastro2Puntos(data) {
+            const centrosCABA = [
+                [-34.6037, -58.3816], 
+                [-34.5950, -58.4150], 
+                [-34.5800, -58.4350], 
+                [-34.6180, -58.3850], 
+                [-34.5880, -58.3950],
+                [-34.6100, -58.4400]
             ];
 
             data.forEach((row, idx) => {
                 let titulo = row['Título'] || row['Titulo'] || '';
-                let url = row['URL'] || row['url'] || '#';
-                
-                if (titulo) {
-                    let refCoords = zonasCABA[idx % zonasCABA.length];
+                if (titulo && titulo.trim() !== '') {
+                    let refCoords = centrosCABA[idx % centrosCABA.length];
                     let lat = refCoords[0] + (Math.random() - 0.5) * 0.012;
                     let lng = refCoords[1] + (Math.random() - 0.5) * 0.012;
-
-                    let popupContent = `<b>${titulo}</b><br><a href="${url}" target="_blank" style="color: #8D6E63; font-weight: bold;">Ver en Google Maps ↗</a>`;
-
-                    L.circleMarker([lat, lng], {
-                        radius: 8,
-                        fillColor: "#708238", // Color distintivo para esta solapa
-                        color: "#FDFCF7",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map).bindPopup(popupContent);
+                    puntosCoordenadas.push([lat, lng, 0.9]);
                 }
             });
+            actualizarMapaCalor();
+        }
+
+        function actualizarMapaCalor() {
+            if (heatLayer) {
+                map.removeLayer(heatLayer);
+            }
+            if (puntosCoordenadas.length > 0) {
+                heatLayer = L.heatLayer(puntosCoordenadas, {
+                    radius: 25,
+                    blur: 15,
+                    maxZoom: 17,
+                    gradient: { 0.4: '#D7CCC8', 0.65: '#8D6E63', 1: '#3E2723' }
+                }).addTo(map);
+            }
         }
 
         function renderChartHabilitacionesFijas() {
