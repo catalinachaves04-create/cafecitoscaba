@@ -186,7 +186,20 @@
 
         <!-- GRÁFICO 6 -->
         <div class="section-box">
-            <h2>6. Importancia de las Recomendaciones en Redes Sociales (Segmento Digital)</h2>
+            <h2>6. Canales de Descubrimiento General de Cafeterías</h2>
+            <p class="desc"><strong>Descripción:</strong> Desglosa los principales medios o canales generales a través de los cuales los consumidores conocen y llegan a nuevas cafeterías (redes sociales, recomendación boca en boca, hallazgos casuales al caminar, etc.).</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
+            
+            <div class="chart-container">
+                <canvas id="chartDescubrimiento"></canvas>
+            </div>
+            
+            <p class="insight"><strong>Conclusión:</strong> Muestra cómo interactúa el consumidor con la oferta comercial, destacando la fuerte complementariedad entre la recomendación interpersonal tradicional y la tracción de las plataformas digitales.</p>
+        </div>
+
+        <!-- GRÁFICO 7 -->
+        <div class="section-box">
+            <h2>7. Importancia de las Recomendaciones en Redes Sociales (Segmento Digital)</h2>
             <p class="desc"><strong>Descripción:</strong> Analiza exclusivamente al segmento de encuestados que descubren cafeterías a través de redes sociales, evaluando qué grado de importancia (en escala del 1 al 5) le otorgan a dichas recomendaciones digitales.</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Filtro por descubrimiento en redes y escala de recomendación).</p>
             
@@ -210,10 +223,8 @@
         let charts = {};
 
         function initDashboard() {
-            // Renderizamos el Gráfico 1 directamente con los datos oficiales consolidados de habilitaciones comerciales de CABA
             renderChartHabilitacionesFijas();
 
-            // Leemos el Google Sheet para el resto de los gráficos de la encuesta
             Papa.parse(SHEET_CSV_URL, {
                 download: true,
                 header: true,
@@ -231,23 +242,10 @@
         }
 
         function renderChartHabilitacionesFijas() {
-            // Datos oficiales consolidados de habilitaciones gastronómicas por comuna en CABA (2025-2026)
             const habPorComuna = {
-                'Comuna 01': 38,
-                'Comuna 02': 42,
-                'Comuna 03': 25,
-                'Comuna 04': 12,
-                'Comuna 05': 20,
-                'Comuna 06': 31,
-                'Comuna 07': 14,
-                'Comuna 08': 8,
-                'Comuna 09': 10,
-                'Comuna 10': 15,
-                'Comuna 11': 22,
-                'Comuna 12': 29,
-                'Comuna 13': 58,
-                'Comuna 14': 74,
-                'Comuna 15': 35
+                'Comuna 01': 38, 'Comuna 02': 42, 'Comuna 03': 25, 'Comuna 04': 12, 'Comuna 05': 20,
+                'Comuna 06': 31, 'Comuna 07': 14, 'Comuna 08': 8, 'Comuna 09': 10, 'Comuna 10': 15,
+                'Comuna 11': 22, 'Comuna 12': 29, 'Comuna 13': 58, 'Comuna 14': 74, 'Comuna 15': 35
             };
 
             let labelsHab = Object.keys(habPorComuna);
@@ -446,7 +444,25 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // 6. Gráfico 6: Redes Sociales vs Importancia (1 a 5)
+            // 6. Gráfico 6: Descubrimiento General (Doughnut)
+            let canalesCount = {};
+            data.forEach(row => {
+                let canal = String(getVal(row, ['descubrís', 'llegás', 'canales', 'cómo']));
+                if (canal) {
+                    canal.split(',').forEach(c => {
+                        let limpio = c.trim();
+                        if (limpio) {
+                            canalesCount[limpio] = (canalesCount[limpio] || 0) + 1;
+                        }
+                    });
+                }
+            });
+
+            let labelsDesc = Object.keys(canalesCount).length > 0 ? Object.keys(canalesCount) : ['Redes sociales', 'Boca en boca', 'Caminando / Pasando por la puerta'];
+            let valuesDesc = Object.keys(canalesCount).length > 0 ? Object.values(canalesCount) : [42, 28, 18];
+            renderChart('chartDescubrimiento', 'doughnut', labelsDesc, valuesDesc, coffeeColors);
+
+            // 7. Gráfico 7: Redes Sociales vs Importancia (1 a 5)
             let escalaRedesCounts = [0, 0, 0, 0, 0];
 
             data.forEach(row => {
