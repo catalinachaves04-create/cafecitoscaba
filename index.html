@@ -238,8 +238,8 @@
 
         <!-- GRÁFICO 3 -->
         <div class="section-box">
-            <h2>3. Personas que residen vs. Personas que consumen por Zona / Comuna</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de personas que residen en una zona frente al volumen de personas que afirman consumir café en esa misma zona, unificando tanto comunas como menciones regionales (ej. Zona Oeste).</p>
+            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas</h2>
+            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de personas que residen frente a quienes consumen, abarcando tanto las Comunas (1 a 15) como las Zonas macro (Norte, Noroeste, Oeste y Sur).</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
@@ -251,15 +251,15 @@
 
         <!-- GRÁFICO 4 -->
         <div class="section-box">
-            <h2>4. Origen de residentes que consumen en las Top 3 Comunas (Movilidad Simplificada)</h2>
-            <p class="desc"><strong>Descripción:</strong> Muestra la procedencia de los consumidores en las tres comunas con mayor demanda, agrupando los orígenes en tres categorías claras: misma comuna, comunas de alrededor/cercanas y otras comunas lejanas.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Cruce entre zonas de consumo y lugar de residencia).</p>
+            <h2>4. Origen de residentes que consumen en las Top 3 Zonas/Comunas (Movilidad Simplificada)</h2>
+            <p class="desc"><strong>Descripción:</strong> Muestra la procedencia de los consumidores en las tres zonas/comunas con mayor demanda, agrupando los orígenes en categorías claras de cercanía y lejanía.</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
                 <canvas id="chartMovilidadSimplificada"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Permite ver cómo las comunas principales atraen a consumidores de comunas cercanas y otras zonas lejanas (alta movilidad), evidenciando el carácter metropolitano de estos polos gastronómicos frente a zonas de consumo más local.</p>
+            <p class="insight"><strong>Conclusión:</strong> Permite ver cómo las zonas principales atraen a consumidores de áreas cercanas y otras regiones (alta movilidad), evidenciando el carácter metropolitano de estos polos gastronómicos.</p>
         </div>
 
         <!-- GRÁFICO 5 -->
@@ -537,7 +537,7 @@
             data.forEach(row => {
                 let zonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])) || '';
                 let upperZonas = zonas.toUpperCase();
-                if (upperZonas.includes('13') || upperZonas.includes('14') || upperZonas.includes('2') || upperZonas.includes('PALERMO') || upperZonas.includes('BELGRANO') || upperZonas.includes('RECOLETA')) {
+                if (upperZonas.includes('13') || upperZonas.includes('14') || upperZonas.includes('2') || upperZonas.includes('PALERMO') || upperZonas.includes('BELGRANO') || upperZonas.includes('RECOLETA') || upperZonas.includes('NORTE')) {
                     corredorNorteCount++;
                 } else if (zonas.trim() !== '') {
                     corredorSurCount++;
@@ -549,42 +549,40 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            // 3. Gráfico 3: Residencia vs Consumo (Captura flexible de comunas, barrios y regiones como Zona Oeste)
-            let residentesZona = {};
-            let consumidoresZona = {};
+            // 3. Gráfico 3: Residencia vs Consumo (Comunas 1 a 15 y Zonas: Norte, Noroeste, Oeste, Sur)
+            let residentesCat = {};
+            let consumidoresCat = {};
 
             data.forEach(row => {
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).trim();
                 if (residencia && residencia !== 'undefined') {
-                    // Limpieza para agrupar ya sea comuna, barrio o región escrita por el usuario
-                    let zonaRes = residencia.split(':')[0].trim();
-                    residentesZona[zonaRes] = (residentesZona[zonaRes] || 0) + 1;
+                    let catRes = residencia.split(':')[0].trim();
+                    residentesCat[catRes] = (residentesCat[catRes] || 0) + 1;
                 }
 
                 let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])).trim();
                 if (consumoZonas && consumoZonas !== 'undefined') {
                     consumoZonas.split(',').forEach(z => {
-                        let zonaCons = z.split(':')[0].trim();
-                        if (zonaCons) {
-                            consumidoresZona[zonaCons] = (consumidoresZona[zonaCons] || 0) + 1;
+                        let catCons = z.split(':')[0].trim();
+                        if (catCons) {
+                            consumidoresCat[catCons] = (consumidoresCat[catCons] || 0) + 1;
                         }
                     });
                 }
             });
 
-            let todasZonas = [...new Set([...Object.keys(residentesZona), ...Object.keys(consumidoresZona)])];
-            todasZonas.sort((a, b) => {
+            let todasCategorias = [...new Set([...Object.keys(residentesCat), ...Object.keys(consumidoresCat)])];
+            todasCategorias.sort((a, b) => {
                 let numA = parseInt(a.replace(/\D/g, '')) || 99;
                 let numB = parseInt(b.replace(/\D/g, '')) || 99;
                 if (numA !== numB) return numA - numB;
                 return a.localeCompare(b);
             });
 
-            if (todasZonas.length === 0) {
-                todasComunas = ['Comuna 02', 'Comuna 06', 'Comuna 13', 'Comuna 14'];
-                residentesZona = { 'Comuna 02': 12, 'Comuna 06': 25, 'Comuna 13': 18, 'Comuna 14': 30 };
-                consumidoresZona = { 'Comuna 02': 28, 'Comuna 06': 42, 'Comuna 13': 35, 'Comuna 14': 55 };
-                todasZonas = todasComunas;
+            if (todasCategorias.length === 0) {
+                todasCategorias = ['Comuna 2', 'Comuna 14', 'Zona Norte', 'Zona Oeste'];
+                residentesCat = { 'Comuna 2': 10, 'Comuna 14': 20, 'Zona Norte': 15, 'Zona Oeste': 25 };
+                consumidoresCat = { 'Comuna 2': 25, 'Comuna 14': 45, 'Zona Norte': 30, 'Zona Oeste': 15 };
             }
 
             const ctxResCons = document.getElementById('chartResidenciaConsumo').getContext('2d');
@@ -592,36 +590,33 @@
             charts['chartResidenciaConsumo'] = new Chart(ctxResCons, {
                 type: 'bar',
                 data: {
-                    labels: todasZonas,
+                    labels: todasCategorias,
                     datasets: [
-                        { label: 'Personas que Residen', data: todasZonas.map(z => residentesZona[z] || 0), backgroundColor: '#5D4037' },
-                        { label: 'Personas que Consumen', data: todasZonas.map(z => consumidoresZona[z] || 0), backgroundColor: '#8D6E63' }
+                        { label: 'Personas que Residen', data: todasCategorias.map(c => residentesCat[c] || 0), backgroundColor: '#5D4037' },
+                        { label: 'Personas que Consumen', data: todasCategorias.map(c => consumidoresCat[c] || 0), backgroundColor: '#8D6E63' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            let top3Zonas = Object.keys(consumidoresZona)
-                .sort((a, b) => consumidoresZona[b] - consumidoresZona[a])
+            let top3Cat = Object.keys(consumidoresCat)
+                .sort((a, b) => consumidoresCat[b] - consumidoresCat[a])
                 .slice(0, 3);
-            if (top3Zonas.length === 0) top3Zonas = ['Comuna 14', 'Comuna 6', 'Comuna 13'];
+            if (top3Cat.length === 0) top3Cat = ['Comuna 14', 'Comuna 13', 'Zona Norte'];
 
-            let mismaComunaCount = top3Zonas.map(() => 0);
-            let cercanasCount = top3Zonas.map(() => 0);
-            let otrasCount = top3Zonas.map(() => 0);
+            let mismaCatCount = top3Cat.map(() => 0);
+            let cercanasCount = top3Cat.map(() => 0);
+            let otrasCount = top3Cat.map(() => 0);
 
             data.forEach(row => {
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).split(':')[0].trim();
                 let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar']));
                 
-                top3Zonas.forEach((zonaTop, idx) => {
-                    if (consumoZonas.includes(zonaTop) && residencia) {
-                        let numTop = parseInt(zonaTop.replace(/\D/g, ''));
-                        let numRes = parseInt(residencia.replace(/\D/g, ''));
-                        
-                        if (residencia === zonaTop) {
-                            mismaComunaCount[idx]++;
-                        } else if (!isNaN(numTop) && !isNaN(numRes) && Math.abs(numTop - numRes) <= 2) {
+                top3Cat.forEach((catTop, idx) => {
+                    if (consumoZonas.includes(catTop) && residencia) {
+                        if (residencia === catTop) {
+                            mismaCatCount[idx]++;
+                        } else if (residencia.toLowerCase().includes(catTop.toLowerCase()) || catTop.toLowerCase().includes('norte')) {
                             cercanasCount[idx]++;
                         } else {
                             otrasCount[idx]++;
@@ -635,11 +630,11 @@
             charts['chartMovilidadSimplificada'] = new Chart(ctxMovSimp, {
                 type: 'bar',
                 data: {
-                    labels: top3Zonas,
+                    labels: top3Cat,
                     datasets: [
-                        { label: 'Gente de la misma zona', data: mismaComunaCount, backgroundColor: '#708238' },
+                        { label: 'Misma zona / comuna', data: mismaCatCount, backgroundColor: '#708238' },
                         { label: 'Zonas cercanas', data: cercanasCount, backgroundColor: '#8D6E63' },
-                        { label: 'Otras zonas (lejanas)', data: otrasCount, backgroundColor: '#3E2723' }
+                        { label: 'Otras zonas lejanas', data: otrasCount, backgroundColor: '#3E2723' }
                     ]
                 },
                 options: { 
