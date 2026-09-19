@@ -238,8 +238,8 @@
 
         <!-- GRÁFICO 3 -->
         <div class="section-box">
-            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de personas que residen frente a quienes consumen, abarcando tanto las Comunas (1 a 15) como las Zonas macro (Norte, Noroeste, Oeste y Sur).</p>
+            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas Macro</h2>
+            <p class="desc"><strong>Descripción:</strong> Compara mediante barras agrupadas el volumen de personas que residen frente a quienes consumen, segmentado estrictamente en las 15 Comunas y las 4 Zonas Macro (Norte, Noroeste, Oeste y Sur).</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
@@ -537,7 +537,7 @@
             data.forEach(row => {
                 let zonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])) || '';
                 let upperZonas = zonas.toUpperCase();
-                if (upperZonas.includes('13') || upperZonas.includes('14') || upperZonas.includes('2') || upperZonas.includes('PALERMO') || upperZonas.includes('BELGRANO') || upperZonas.includes('RECOLETA') || upperZonas.includes('NORTE')) {
+                if (upperZonas.includes('13') || upperZonas.includes('14') || upperZonas.includes('2') || upperZonas.includes('NORTE')) {
                     corredorNorteCount++;
                 } else if (zonas.trim() !== '') {
                     corredorSurCount++;
@@ -549,74 +549,67 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            // 3. Gráfico 3: Residencia vs Consumo (Comunas 1 a 15 y Zonas: Norte, Noroeste, Oeste, Sur)
+            // 3. Gráfico 3: Forzar estrictamente las 15 Comunas y las 4 Zonas Macro
+            const categoriasFijas = [
+                'Comuna 1', 'Comuna 2', 'Comuna 3', 'Comuna 4', 'Comuna 5',
+                'Comuna 6', 'Comuna 7', 'Comuna 8', 'Comuna 9', 'Comuna 10',
+                'Comuna 11', 'Comuna 12', 'Comuna 13', 'Comuna 14', 'Comuna 15',
+                'Zona Norte', 'Zona Noroeste', 'Zona Oeste', 'Zona Sur'
+            ];
+
             let residentesCat = {};
             let consumidoresCat = {};
+            categoriasFijas.forEach(c => { residentesCat[c] = 0; consumidoresCat[c] = 0; });
 
             data.forEach(row => {
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).trim();
                 if (residencia && residencia !== 'undefined') {
-                    let catRes = residencia.split(':')[0].trim();
-                    residentesCat[catRes] = (residentesCat[catRes] || 0) + 1;
+                    categoriasFijas.forEach(cat => {
+                        if (residencia.toLowerCase().includes(cat.toLowerCase())) {
+                            residentesCat[cat]++;
+                        }
+                    });
                 }
 
                 let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])).trim();
                 if (consumoZonas && consumoZonas !== 'undefined') {
-                    consumoZonas.split(',').forEach(z => {
-                        let catCons = z.split(':')[0].trim();
-                        if (catCons) {
-                            consumidoresCat[catCons] = (consumidoresCat[catCons] || 0) + 1;
+                    categoriasFijas.forEach(cat => {
+                        if (consumoZonas.toLowerCase().includes(cat.toLowerCase())) {
+                            consumidoresCat[cat]++;
                         }
                     });
                 }
             });
-
-            let todasCategorias = [...new Set([...Object.keys(residentesCat), ...Object.keys(consumidoresCat)])];
-            todasCategorias.sort((a, b) => {
-                let numA = parseInt(a.replace(/\D/g, '')) || 99;
-                let numB = parseInt(b.replace(/\D/g, '')) || 99;
-                if (numA !== numB) return numA - numB;
-                return a.localeCompare(b);
-            });
-
-            if (todasCategorias.length === 0) {
-                todasCategorias = ['Comuna 2', 'Comuna 14', 'Zona Norte', 'Zona Oeste'];
-                residentesCat = { 'Comuna 2': 10, 'Comuna 14': 20, 'Zona Norte': 15, 'Zona Oeste': 25 };
-                consumidoresCat = { 'Comuna 2': 25, 'Comuna 14': 45, 'Zona Norte': 30, 'Zona Oeste': 15 };
-            }
 
             const ctxResCons = document.getElementById('chartResidenciaConsumo').getContext('2d');
             if (charts['chartResidenciaConsumo']) charts['chartResidenciaConsumo'].destroy();
             charts['chartResidenciaConsumo'] = new Chart(ctxResCons, {
                 type: 'bar',
                 data: {
-                    labels: todasCategorias,
+                    labels: categoriasFijas,
                     datasets: [
-                        { label: 'Personas que Residen', data: todasCategorias.map(c => residentesCat[c] || 0), backgroundColor: '#5D4037' },
-                        { label: 'Personas que Consumen', data: todasCategorias.map(c => consumidoresCat[c] || 0), backgroundColor: '#8D6E63' }
+                        { label: 'Personas que Residen', data: categoriasFijas.map(c => residentesCat[c]), backgroundColor: '#5D4037' },
+                        { label: 'Personas que Consumen', data: categoriasFijas.map(c => consumidoresCat[c]), backgroundColor: '#8D6E63' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            let top3Cat = Object.keys(consumidoresCat)
-                .sort((a, b) => consumidoresCat[b] - consumidoresCat[a])
-                .slice(0, 3);
-            if (top3Cat.length === 0) top3Cat = ['Comuna 14', 'Comuna 13', 'Zona Norte'];
-
+            let top3Cat = [...categoriasFijas].sort((a, b) => consumidoresCat[b] - consumidoresCat[a]).slice(0, 3);
             let mismaCatCount = top3Cat.map(() => 0);
             let cercanasCount = top3Cat.map(() => 0);
             let otrasCount = top3Cat.map(() => 0);
 
             data.forEach(row => {
-                let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).split(':')[0].trim();
-                let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar']));
+                let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).toLowerCase();
+                let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])).toLowerCase();
                 
                 top3Cat.forEach((catTop, idx) => {
-                    if (consumoZonas.includes(catTop) && residencia) {
-                        if (residencia === catTop) {
+                    let cLower = catTop.toLowerCase();
+                    if (consumoZonas.includes(cLower) && residencia) {
+                        if (residencia.includes(cLower)) {
                             mismaCatCount[idx]++;
-                        } else if (residencia.toLowerCase().includes(catTop.toLowerCase()) || catTop.toLowerCase().includes('norte')) {
+                        } else if (residencia.includes('norte') || cLower.includes('norte')) {
                             cercanasCount[idx]++;
                         } else {
                             otrasCount[idx]++;
