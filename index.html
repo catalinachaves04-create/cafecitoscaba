@@ -238,8 +238,8 @@
 
         <!-- GRÁFICO 3 -->
         <div class="section-box">
-            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas Macro</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara mediante barras agrupadas el volumen de personas que residen frente a quienes consumen, segmentado estrictamente en las 15 Comunas y las 4 Zonas Macro (Norte, Noroeste, Oeste y Sur).</p>
+            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas Macro (Datos Reales de la Encuesta)</h2>
+            <p class="desc"><strong>Descripción:</strong> Compara mediante barras agrupadas el volumen exacto de personas que residen frente a quienes consumen, alimentado directamente de las respuestas de la encuesta para cada Comuna y Zona Macro.</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
@@ -549,7 +549,7 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            // 3. Gráfico 3: Forzar estrictamente las 15 Comunas y las 4 Zonas Macro
+            // 3. Gráfico 3: Extracción directa y estricta de las 15 Comunas y Zonas Macro desde la encuesta
             const categoriasFijas = [
                 'Comuna 1', 'Comuna 2', 'Comuna 3', 'Comuna 4', 'Comuna 5',
                 'Comuna 6', 'Comuna 7', 'Comuna 8', 'Comuna 9', 'Comuna 10',
@@ -565,7 +565,8 @@
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).trim();
                 if (residencia && residencia !== 'undefined') {
                     categoriasFijas.forEach(cat => {
-                        if (residencia.toLowerCase().includes(cat.toLowerCase())) {
+                        // Coincidencia exacta o contenida por nombre de categoría
+                        if (residencia.toLowerCase() === cat.toLowerCase() || residencia.toLowerCase().includes(cat.toLowerCase())) {
                             residentesCat[cat]++;
                         }
                     });
