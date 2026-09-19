@@ -238,15 +238,15 @@
 
         <!-- GRÁFICO 3 -->
         <div class="section-box">
-            <h2>3. Personas que residen vs. Personas que consumen por Comuna</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de habitantes de una comuna frente al volumen de personas que afirman consumir café en esa misma zona, ordenadas de izquierda a derecha de la Comuna 1 a la 15.</p>
-            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA) (Variables de lugar de residencia y zonas de consumo).</p>
+            <h2>3. Personas que residen vs. Personas que consumen por Zona / Comuna</h2>
+            <p class="desc"><strong>Descripción:</strong> Compara de forma directa mediante barras agrupadas el volumen de personas que residen en una zona frente al volumen de personas que afirman consumir café en esa misma zona, unificando tanto comunas como menciones regionales (ej. Zona Oeste).</p>
+            <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
                 <canvas id="chartResidenciaConsumo"></canvas>
             </div>
             
-            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de flotación urbana: mientras que las comunas residenciales muestran valores estables, los polos clave presentan una demanda que supera ampliamente a la población residente debido a visitantes externos.</p>
+            <p class="insight"><strong>Conclusión:</strong> Expone el marcado fenómeno de flotación urbana: mientras que las zonas residenciales muestran valores estables o de estricta proximidad, los polos clave presentan una demanda que supera ampliamente a la población residente debido a visitantes externos.</p>
         </div>
 
         <!-- GRÁFICO 4 -->
@@ -325,7 +325,7 @@
             'Comuna 7': { barrios: 'Flores, Parque Chacabuco', count: 3 },
             'Comuna 8': { barrios: 'Villa Soldati, Villa Lugano, Riachuelo', count: 1 },
             'Comuna 9': { barrios: 'Liniers, Mataderos, Parque Avellaneda', count: 2 },
-            'Comuna 10': { barrios: 'Villa Real, Monte Castro, Versalles, Floresta, Vélez Sársfield, Comuna 10', count: 3 },
+            'Comuna 10': { barrios: 'Villa Real, Monte Castro, Versalles, Floresta, Vélez Sársfield', count: 3 },
             'Comuna 11': { barrios: 'Villa General Mitre, Villa Devoto, Villa del Parque, Villa Santa Rita', count: 6 },
             'Comuna 12': { barrios: 'Coghlan, Saavedra, Villa Urquiza, Villa Pueyrredón', count: 7 },
             'Comuna 13': { barrios: 'Belgrano, Núñez, Colegiales', count: 18 },
@@ -549,38 +549,42 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            let residentesComuna = {};
-            let consumidoresComuna = {};
+            // 3. Gráfico 3: Residencia vs Consumo (Captura flexible de comunas, barrios y regiones como Zona Oeste)
+            let residentesZona = {};
+            let consumidoresZona = {};
 
             data.forEach(row => {
-                let residencia = String(getVal(row, ['residencia', 'lugar de residencia']));
-                if (residencia) {
-                    let comunaLimpia = residencia.split(':')[0].trim();
-                    residentesComuna[comunaLimpia] = (residentesComuna[comunaLimpia] || 0) + 1;
+                let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).trim();
+                if (residencia && residencia !== 'undefined') {
+                    // Limpieza para agrupar ya sea comuna, barrio o región escrita por el usuario
+                    let zonaRes = residencia.split(':')[0].trim();
+                    residentesZona[zonaRes] = (residentesZona[zonaRes] || 0) + 1;
                 }
 
-                let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar']));
-                if (consumoZonas) {
+                let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])).trim();
+                if (consumoZonas && consumoZonas !== 'undefined') {
                     consumoZonas.split(',').forEach(z => {
-                        if (z.includes('Comuna')) {
-                            let cLimpia = z.split(':')[0].trim();
-                            consumidoresComuna[cLimpia] = (consumidoresComuna[cLimpia] || 0) + 1;
+                        let zonaCons = z.split(':')[0].trim();
+                        if (zonaCons) {
+                            consumidoresZona[zonaCons] = (consumidoresZona[zonaCons] || 0) + 1;
                         }
                     });
                 }
             });
 
-            let todasComunas = [...new Set([...Object.keys(residentesComuna), ...Object.keys(consumidoresComuna)])];
-            todasComunas.sort((a, b) => {
+            let todasZonas = [...new Set([...Object.keys(residentesZona), ...Object.keys(consumidoresZona)])];
+            todasZonas.sort((a, b) => {
                 let numA = parseInt(a.replace(/\D/g, '')) || 99;
                 let numB = parseInt(b.replace(/\D/g, '')) || 99;
-                return numA - numB;
+                if (numA !== numB) return numA - numB;
+                return a.localeCompare(b);
             });
 
-            if (todasComunas.length === 0) {
+            if (todasZonas.length === 0) {
                 todasComunas = ['Comuna 02', 'Comuna 06', 'Comuna 13', 'Comuna 14'];
-                residentesComuna = { 'Comuna 02': 12, 'Comuna 06': 25, 'Comuna 13': 18, 'Comuna 14': 30 };
-                consumidoresComuna = { 'Comuna 02': 28, 'Comuna 06': 42, 'Comuna 13': 35, 'Comuna 14': 55 };
+                residentesZona = { 'Comuna 02': 12, 'Comuna 06': 25, 'Comuna 13': 18, 'Comuna 14': 30 };
+                consumidoresZona = { 'Comuna 02': 28, 'Comuna 06': 42, 'Comuna 13': 35, 'Comuna 14': 55 };
+                todasZonas = todasComunas;
             }
 
             const ctxResCons = document.getElementById('chartResidenciaConsumo').getContext('2d');
@@ -588,34 +592,34 @@
             charts['chartResidenciaConsumo'] = new Chart(ctxResCons, {
                 type: 'bar',
                 data: {
-                    labels: todasComunas,
+                    labels: todasZonas,
                     datasets: [
-                        { label: 'Personas que Residen', data: todasComunas.map(c => residentesComuna[c] || 0), backgroundColor: '#5D4037' },
-                        { label: 'Personas que Consumen', data: todasComunas.map(c => consumidoresComuna[c] || 0), backgroundColor: '#8D6E63' }
+                        { label: 'Personas que Residen', data: todasZonas.map(z => residentesZona[z] || 0), backgroundColor: '#5D4037' },
+                        { label: 'Personas que Consumen', data: todasZonas.map(z => consumidoresZona[z] || 0), backgroundColor: '#8D6E63' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            let top3Comunas = Object.keys(consumidoresComuna)
-                .sort((a, b) => consumidoresComuna[b] - consumidoresComuna[a])
+            let top3Zonas = Object.keys(consumidoresZona)
+                .sort((a, b) => consumidoresZona[b] - consumidoresZona[a])
                 .slice(0, 3);
-            if (top3Comunas.length === 0) top3Comunas = ['Comuna 14', 'Comuna 6', 'Comuna 13'];
+            if (top3Zonas.length === 0) top3Zonas = ['Comuna 14', 'Comuna 6', 'Comuna 13'];
 
-            let mismaComunaCount = top3Comunas.map(() => 0);
-            let cercanasCount = top3Comunas.map(() => 0);
-            let otrasCount = top3Comunas.map(() => 0);
+            let mismaComunaCount = top3Zonas.map(() => 0);
+            let cercanasCount = top3Zonas.map(() => 0);
+            let otrasCount = top3Zonas.map(() => 0);
 
             data.forEach(row => {
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).split(':')[0].trim();
                 let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar']));
                 
-                top3Comunas.forEach((comunaTop, idx) => {
-                    if (consumoZonas.includes(comunaTop) && residencia) {
-                        let numTop = parseInt(comunaTop.replace(/\D/g, ''));
+                top3Zonas.forEach((zonaTop, idx) => {
+                    if (consumoZonas.includes(zonaTop) && residencia) {
+                        let numTop = parseInt(zonaTop.replace(/\D/g, ''));
                         let numRes = parseInt(residencia.replace(/\D/g, ''));
                         
-                        if (residencia === comunaTop) {
+                        if (residencia === zonaTop) {
                             mismaComunaCount[idx]++;
                         } else if (!isNaN(numTop) && !isNaN(numRes) && Math.abs(numTop - numRes) <= 2) {
                             cercanasCount[idx]++;
@@ -631,11 +635,11 @@
             charts['chartMovilidadSimplificada'] = new Chart(ctxMovSimp, {
                 type: 'bar',
                 data: {
-                    labels: top3Comunas,
+                    labels: top3Zonas,
                     datasets: [
-                        { label: 'Gente de la misma comuna', data: mismaComunaCount, backgroundColor: '#708238' },
-                        { label: 'Comunas cercanas', data: cercanasCount, backgroundColor: '#8D6E63' },
-                        { label: 'Otras comunas (lejanas)', data: otrasCount, backgroundColor: '#3E2723' }
+                        { label: 'Gente de la misma zona', data: mismaComunaCount, backgroundColor: '#708238' },
+                        { label: 'Zonas cercanas', data: cercanasCount, backgroundColor: '#8D6E63' },
+                        { label: 'Otras zonas (lejanas)', data: otrasCount, backgroundColor: '#3E2723' }
                     ]
                 },
                 options: { 
