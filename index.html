@@ -238,8 +238,8 @@
 
         <!-- GRÁFICO 3 -->
         <div class="section-box">
-            <h2>3. Personas que residen vs. Personas que consumen por Comunas y Zonas Macro (Datos Reales de la Encuesta)</h2>
-            <p class="desc"><strong>Descripción:</strong> Compara mediante barras agrupadas el volumen exacto de personas que residen frente a quienes consumen, alimentado directamente de las respuestas de la encuesta para cada Comuna y Zona Macro.</p>
+            <h2>3. Personas que residen vs. Personas que consumen por Comunas (1 a 15) y Zonas Macro</h2>
+            <p class="desc"><strong>Descripción:</strong> Compara mediante barras agrupadas el volumen exacto extraído de las planillas de la encuesta, ordenado estrictamente en las 15 Comunas y las 4 Zonas Macro (Zona Norte, Zona Noroeste, Zona Oeste, Zona Sur).</p>
             <p class="source"><strong>Fuente de datos:</strong> Respuestas de la Encuesta de Consumo de Cafés de Especialidad (CABA).</p>
             
             <div class="chart-container">
@@ -303,7 +303,7 @@
 
         <!-- CONCLUSIONES GENERALES UNIFICADAS -->
         <div class="conclusions-box">
-            <h3>Conclusiones Generales del Estudio</h3>
+            <h3>Conclusions Generales del Estudio</h3>
             <p>El análisis del mercado de cafeterías de especialidad en CABA revela un ecosistema fuertemente centralizado en los polos norte y céntricos de la ciudad (como las comunas 14 y 13), zonas que concentran tanto el mayor volumen de nuevas habilitaciones comerciales como los picos más altos de demanda. Esto genera un marcado fenómeno de <strong>flotación urbana</strong>: la cantidad de personas que consumen en estos polos excede ampliamente a sus residentes locales, impulsado por una dinámica de movilidad donde visitantes de diversos puntos de la ciudad se desplazan hacia estos centros neurálgicos, a diferencia de comunas más residenciales (como la Comuna 6) que se sostienen mediante una lógica de estricta proximidad. Curiosamente, al cruzar estas tendencias con el perfil socioeconómico y de consumo, se observa que los sectores de menores ingresos ($600.000 o menos) registran una alta frecuencia de asistencia, un comportamiento estrechamente vinculado a una audiencia de jóvenes estudiantes que residen con sus padres y destinan su ingreso disponible al ocio. En este punto, <strong>el rol de las redes sociales se vuelve el motor clave:</strong> la decisión de consumo de estos jóvenes no responde al azar urbano, sino que está profundamente moldeada por el impacto visual, los algoritmos y las recomendaciones digitales, transformando a las cafeterías de especialidad en verdaderos escenarios hiperconectados de consumo cultural y pertenencia juvenil.</p>
         </div>
     </div>
@@ -549,7 +549,7 @@
             }
             renderChart('chartZonas', 'pie', ['Corredor Norte', 'Resto / Corredor Sur'], [corredorNorteCount, corredorSurCount], ['#708238', '#8D6E63']);
 
-            // 3. Gráfico 3: Extracción directa y estricta de las 15 Comunas y Zonas Macro desde la encuesta
+            // 3. Gráfico 3: Las 15 Comunas en orden estricto + Zonas Macro solicitadas (Norte, Noroeste, Oeste, Sur)
             const categoriasFijas = [
                 'Comuna 1', 'Comuna 2', 'Comuna 3', 'Comuna 4', 'Comuna 5',
                 'Comuna 6', 'Comuna 7', 'Comuna 8', 'Comuna 9', 'Comuna 10',
@@ -563,23 +563,25 @@
 
             data.forEach(row => {
                 let residencia = String(getVal(row, ['residencia', 'lugar de residencia'])).trim();
-                if (residencia && residencia !== 'undefined') {
-                    categoriasFijas.forEach(cat => {
-                        // Coincidencia exacta o contenida por nombre de categoría
-                        if (residencia.toLowerCase() === cat.toLowerCase() || residencia.toLowerCase().includes(cat.toLowerCase())) {
-                            residentesCat[cat]++;
-                        }
-                    });
-                }
-
                 let consumoZonas = String(getVal(row, ['barrios', 'localidades', 'están las cafeterías', 'suelen estar'])).trim();
-                if (consumoZonas && consumoZonas !== 'undefined') {
-                    categoriasFijas.forEach(cat => {
-                        if (consumoZonas.toLowerCase().includes(cat.toLowerCase())) {
-                            consumidoresCat[cat]++;
-                        }
-                    });
-                }
+
+                categoriasFijas.forEach(cat => {
+                    // Evitar falsos positivos numéricos (ej: Comuna 1 matchee con Comuna 11, 12, etc.)
+                    let regex;
+                    if (cat.startsWith('Comuna ')) {
+                        let num = cat.replace('Comuna ', '').trim();
+                        regex = new RegExp('(^|[^0-9])' + cat.replace(' ', '\\s+') + '([^0-9]|$)', 'i');
+                    } else {
+                        regex = new RegExp(cat.replace(' ', '\\s+'), 'i');
+                    }
+
+                    if (regex.test(residencia)) {
+                        residentesCat[cat]++;
+                    }
+                    if (regex.test(consumoZonas)) {
+                        consumidoresCat[cat]++;
+                    }
+                });
             });
 
             const ctxResCons = document.getElementById('chartResidenciaConsumo').getContext('2d');
